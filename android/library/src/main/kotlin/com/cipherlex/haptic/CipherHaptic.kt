@@ -405,6 +405,17 @@ class CipherHaptic internal constructor(
             hardwareClassOverride: HardwareClass? = null,
             latencyProbe: LatencyProbe = LatencyProbe.NOOP,
             metricsSink: CipherHapticMetricsSink = CipherHapticMetricsSink.NOOP,
+            /**
+             * **V3 的对照组开关**（P-10）。传 [NoWakeLock] 即"不持锁"组。
+             *
+             * V3 是五项验证里唯一一个**预期结论是删代码**的：若持锁与不持锁的振动
+             * 完成率无差异，就直接删掉这条防线，不留装饰性代码。而**没有对照组就
+             * 证不了它有用** —— 只测"持锁通过"证明不了锁起了作用，可能它本来就不需要。
+             *
+             * 这个参数存在的唯一理由就是让那个对照组做得成。V3 定论后应连同
+             * [AndroidWakeLock] 一起处理（删掉或转正）。
+             */
+            wakeLockOverride: WakeLockGateway? = null,
         ): CipherHaptic {
             val app = context.applicationContext
             val gateway = AndroidVibratorGateway(app)
@@ -412,7 +423,7 @@ class CipherHaptic internal constructor(
                 loader = SpecLoader.fromResources(),
                 scheduler = AndroidHapticScheduler(),
                 gateway = gateway,
-                wakeLock = AndroidWakeLock(app),
+                wakeLock = wakeLockOverride ?: AndroidWakeLock(app),
                 // hardwareClassOverride 是产出 LINEAR_X_LIMITED 的【唯一】路径（P-07）——
                 // 它诚实地承认"这就是一张白名单"，而不是伪装成运行时探测。
                 probe = HardwareClassProbe(gateway, hardwareClassOverride),

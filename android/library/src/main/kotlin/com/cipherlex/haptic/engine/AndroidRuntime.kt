@@ -59,18 +59,44 @@ class AndroidHapticScheduler(name: String = "CipherHaptic") : HapticScheduler {
 }
 
 /**
+ * **V3 的对照组实现**：什么都不做。
+ *
+ * 传给 `CipherHaptic.create(wakeLockOverride = NoWakeLock)` 即构成"不持锁"组。
+ * V3 的判据是**两组的振动完成率之差**：任一格 ≥20 个百分点算有效，所有格 <5 算无效。
+ */
+object NoWakeLock : WakeLockGateway {
+    override fun shouldHold(resolved: ResolvedWaveform) = false
+    override fun acquire() = Unit
+    override fun release() = Unit
+}
+
+/**
  * `WakeLockGateway` 的 Android 实现（P-10）。
  *
- * > ⚠️ **这道防线的有效性本身待验证（V3）。** `vibrate()` 提交后实际执行在
- * > system_server 的 `VibratorService`，**它自己持有 wake lock**；app 侧再持
- * > partial wake lock 对**已提交**的振动可能完全无用。
+ * > ⚠️ **这道防线的有效性本身待验证（V3）**，而 2026-08-02 真机取证已让天平明显倾斜：
  * >
- * > V3 实测若无差异（判据：所有格差值 <5 个百分点），**直接删掉这个类**，
- * > 不留装饰性代码 —— 留着会让下一个人以为这里有防线。
+ * > `dumpsys power` 显示，我们调 `vibrate()` 时**系统会自行获取一个 `*vibrator*`
+ * > partial wake lock**（`*名字*` 是 system_server 内部锁的命名约定，uid 归属调用方）：
+ * >
+ * > ```
+ * > 08-02 22:51:08.624 - 10464 (com.cipherlex.haptic.demo) - ACQ *vibrator* (partial)
+ * > ```
+ * >
+ * > 这直接印证了性能文档的怀疑：**对已提交的振动，app 侧再持锁基本是多余的。**
+ *
+ * ## 但 V3 的问题因此变小了、也变准了
+ *
+ * 真正还需要锁的，不是"振动播放期间"，而是**两次提交之间的调度间隙**：
+ * `looping` 效果靠我们自己的 `end-timer` 触发 `resubmit`，`continuous` 靠 idle-timer
+ * —— **那些定时器要 CPU 醒着才会准时触发**。系统的 `*vibrator*` 锁只覆盖它正在播的
+ * 那一段，覆盖不到间隙。
+ *
+ * 所以 V3 的实验应聚焦：**熄屏 / Doze 下的 looping 与 continuous，两次提交的间隔
+ * 是否被拉长**，而不是"单次 oneshot 是否播完"。见 [[P0验证计划]] V3。
  *
  * 判定条件按**场景**而非时长：v1.1.0 写「短 transient（<50ms）不持」，
  * **判断维度错了** —— wake lock 防的是 CPU 睡眠打断振动，与屏幕状态相关、
- * 与振动时长无关（熄屏下 40ms 的通知振动同样会被打断）。
+ * 与振动时长无关。
  */
 class AndroidWakeLock(context: Context) : WakeLockGateway {
 
