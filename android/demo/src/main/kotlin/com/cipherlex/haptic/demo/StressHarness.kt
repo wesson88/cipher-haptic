@@ -95,16 +95,50 @@ class StressHarness(
 
     fun report(): String = haptic.metricsSnapshot().summary()
 
-    /** 一轮完整压测：burst → 等静息 → 断言。 */
+    /**
+     * 一轮完整压测：burst → 收尾 → **轮询等静息** → 断言。
+     *
+     * ⚠️ **两处都是首版踩过的坑，都不是库的问题、是夹具的问题：**
+     *
+     * 1. **必须收尾**：burst 会起 `playLoopingEffect`，而循环效果**按设计永不自行结束**
+     *    （要靠 `token.cancel()` 或 `stopAllEffects()`）。不收尾就断言"所有 handle 静息"，
+     *    等于把正常行为判成泄漏。
+     *
+     * 2. **必须轮询，不能睡固定时长**：2000 次操作会在串行 scheduler 上排出很深的队列，
+     *    固定 sleep 3s 后队列可能还在排空 —— 那时读到的"活跃 1169"和"1 次请求没记账"
+     *    都是**中间态**，不是缺陷。断言的对象必须是**稳定态**。
+     *
+     * 断言的是"该结束的都结束了"，不是"什么都不许活着"。
+     */
     fun runRound(ops: Int, quiesceMs: Long, onDone: (List<String>) -> Unit) {
         log("压测开始：$ops 次随机操作")
         burst(ops)
-        log("已发送，等待 ${quiesceMs}ms 静息（让 grace / idle 超时到期）")
-        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+        haptic.stopAllEffects()          // 收尾：循环效果不会自己停
+        log("已发送并收尾，轮询等待静息（上限 ${quiesceMs}ms）")
+        waitQuiescent(quiesceMs, System.currentTimeMillis()) {
             val fails = assertInvariants()
             log(if (fails.isEmpty()) "✓ 不变式全部通过" else "✗ ${fails.size} 条违规")
             fails.forEach { log("  · $it") }
             onDone(fails)
-        }, quiesceMs)
+        }
+    }
+
+    /** 轮询直到活跃 handle 归零且计数稳定，或超时。 */
+    private fun waitQuiescent(timeoutMs: Long, startedAt: Long, then: () -> Unit) {
+        val h = android.os.Handler(android.os.Looper.getMainLooper())
+        var lastRequests = -1
+        fun poll() {
+            val m = haptic.metricsSnapshot()
+            val stable = m.activeHandleCount == 0 && m.playRequestCount == lastRequests
+            val timedOut = System.currentTimeMillis() - startedAt > timeoutMs
+            if (stable || timedOut) {
+                if (timedOut) log("⚠️ 等待静息超时（${timeoutMs}ms），按当前状态断言")
+                then()
+            } else {
+                lastRequests = m.playRequestCount
+                h.postDelayed(::poll, 200)
+            }
+        }
+        h.postDelayed(::poll, 200)
     }
 }

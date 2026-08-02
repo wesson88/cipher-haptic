@@ -260,9 +260,12 @@ class CipherHaptic internal constructor(
         // ④ scale  ⑤ degrade（silent → 不建 handle，IR §3.3③）
         val rw = loader.resolve(semantic.id, probe.hardwareClass, globalScale())
             ?: return drop(semantic, "degraded-to-silent")
-        rw.degradeTrace.firstOrNull()?.let {
+        // ⚠️ `full` 的含义是【没有降级】。把它记进 degradeCountsByAction 会让该指标
+        //    恒等于总播放数 —— 真机压测里就是 {full=1641} 而请求正好也是 1641，
+        //    这个数完全没有信息量。它要回答的是"多少效果被降级了"，不是"播了多少次"。
+        rw.degradeTrace.firstOrNull()?.takeIf { it != "full" }?.let {
             metrics.onDegrade(it)
-            if (it != "full") debugDelegate?.onDegraded(semantic.id, it)
+            debugDelegate?.onDegraded(semantic.id, it)
         }
 
         // ⑥ preempt —— 纯逻辑算目标，执行是发 CANCEL（§8.2）
@@ -290,12 +293,12 @@ class CipherHaptic internal constructor(
                                useComposition, probe2, metrics) {
             debugDelegate?.onStateChanged(it)
         }
-        val fsm = PlaybackFsm(table, rw.kind, rw.category, h.actions)
-        h.attach(fsm)
         // ⚠️ 回收必须是【推送式】：Reclaimed 由 grace 定时器驱动，而 sweep() 是拉取式的
-        //    —— 没有下一次业务调用时，回收后的 handle 会一直挂在 activeHandles 里，
-        //    engineState() 永远返回 RUNNING。这不是"晚一点清"，是【永远不清】。
-        fsm.onStateEntered = { st -> if (st == "Reclaimed") retire(h.id) }
+        //    —— 没有下一次业务调用时，回收后的 handle 会一直挂在 activeHandles 里。
+        // ⚠️ 且【不能】直接设 fsm.onStateEntered —— 那个槽归 PlaybackHandle 自己
+        //    （它要用来排 grace 定时器）。抢占它会让自然播完的效果永不回收。
+        h.onReclaimed = { retire(h.id) }
+        h.attach(PlaybackFsm(table, rw.kind, rw.category, h.actions))
         handles[h.id] = h
         startedAt[h.id] = scheduler.nowMs()
         preSubmit(h)                       // continuous 在此塞入手指当前位置
@@ -332,6 +335,14 @@ class CipherHaptic internal constructor(
 
     /** 取当前指标快照。调音台与宿主埋点都从这里读。 */
     fun metricsSnapshot() = metrics.snapshot()
+
+    /**
+     * 活跃 handle 的**状态分布**。压测发现"handle 未归零"时，光知道个数没用 ——
+     * 卡在 `Active`（looping 未取消，正常）与卡在 `Submitting`（平台回调丢了，泄漏）
+     * 是完全不同的两件事。
+     */
+    fun debugHandleStates(): Map<String, Int> =
+        handles.values.groupingBy { "${it.fsm.state}/${it.resolved.kind}" }.eachCount()
 
     private val startedAt = HashMap<Long, Long>()
 

@@ -38,7 +38,9 @@ interface CipherHapticMetricsSink {
  * @property dropCountsByReason 被管线拦掉的次数，按原因分。**这是"用户说点了没感觉"
  *   时唯一能回答"为什么"的数据** —— disabled / system-off / dnd / degraded-to-silent
  *   / no-vibrator 是完全不同的产品问题，混在一起就查不出来。
- * @property degradeCountsByAction 降级动作分布。低端机覆盖率大盘的数据来源。
+ * @property degradeCountsByAction **实际发生的**降级动作分布，低端机触觉覆盖率大盘的来源。
+ *   ⚠️ **不含 `full`** —— `full` 的含义是"没有降级"，记进来会让这个数恒等于总播放数，
+ *   于是完全没有信息量（真机压测里就出现过 `{full=1641}` 而请求也正好 1641）。
  * @property failCount 平台调用抛错次数（`DeadObjectException` 等）。
  * @property leakSuspectCount **回收时仍持有资源的 handle 数**。正常恒为 0；
  *   非 0 即状态机存在抵达不了 `Reclaimed` 的路径 —— 这是 monkey / 压测唯一能抓到
@@ -67,7 +69,11 @@ data class CipherHapticMetricsSnapshot(
         appendLine("硬件档 $hardwareClass  请求 $playRequestCount  提交 $playSubmittedCount")
         appendLine("静默失败率 %.1f%%".format(silentFailureRate * 100))
         if (dropCountsByReason.isNotEmpty()) appendLine("drop  $dropCountsByReason")
-        if (degradeCountsByAction.isNotEmpty()) appendLine("降级  $degradeCountsByAction")
+        appendLine(
+            if (degradeCountsByAction.isEmpty()) "降级  无（全部满血播放）"
+            else "降级  $degradeCountsByAction（占 %.1f%%）".format(
+                degradeCountsByAction.values.sum() * 100.0 / maxOf(1, playSubmittedCount))
+        )
         appendLine("抢占 $preemptedCount  失败 $failCount  活跃 $activeHandleCount(峰值 $peakActiveHandleCount)")
         append(if (leakSuspectCount == 0) "泄漏嫌疑 0 ✓" else "⚠️ 泄漏嫌疑 $leakSuspectCount")
     }

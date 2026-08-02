@@ -58,13 +58,28 @@ class PlaybackHandle(
     /** 供抢占策略读取（§8.2 `activeSnapshot`）。 */
     val state: String get() = fsm.state
 
+    /** 宿主（facade）在此接收"已回收"通知。**与本类自己的状态副作用分开** —— 见 attach。 */
+    var onReclaimed: (() -> Unit)? = null
+
     fun attach(fsm: PlaybackFsm) {
         this.fsm = fsm
         // Completed / Cancelled 都要排 grace，但迁移表里 NATURAL_END→Completed 的
-        // action 是 none（状态机只管"自己怎么活怎么死"，不管资源）。故在此挂一个
-        // 进入终态的观察点，而不是往迁移表里塞一个 action —— 保持"迁移表是纯逻辑"。
+        // action 是 none（状态机只管"自己怎么活怎么死"，不管资源）。故在此挂进入终态的
+        // 观察点，而不是往迁移表里塞 action —— 保持"迁移表是纯逻辑"。
+        //
+        // ⚠️ **这里曾被 facade 覆盖掉，造成真泄漏**：onStateEntered 是单槽回调，
+        //    facade 也想用它做 retire，后设置的把前面的顶掉了。结果是【自然播完】
+        //    的效果永远排不上 grace 定时器 → 永远停在 Completed → 永不 Reclaimed。
+        //    CANCEL 路径没事（grace 由 stop 动作排），所以只有自然结束会泄漏。
+        //    JVM 测试没抓到，因为测试【手动发了 GRACE_EXPIRED】—— 又一次"手动补发的
+        //    事件掩盖了没人产生这个事件"。真机压测 500 次后才现形。
+        //
+        //    现在本类只用一个 onStateEntered，宿主改用 [onReclaimed]，不再抢同一个槽。
         fsm.onStateEntered = { st ->
-            if (st == "Completed" || st == "Cancelled") startGraceTimer()
+            when (st) {
+                "Completed", "Cancelled" -> startGraceTimer()
+                "Reclaimed" -> onReclaimed?.invoke()
+            }
         }
     }
 

@@ -265,6 +265,23 @@ class CipherHapticTest {
     }
 
     @Test
+    fun `自然播完的效果必须自行回收 —— 不靠任何人手动发 GRACE_EXPIRED`() {
+        // ⚠️ 这条是真机压测抓出来的泄漏的回归测试。
+        //    此前所有测试都【手动发 GRACE_EXPIRED】，于是"没人排 grace 定时器"这件事
+        //    被完全掩盖：facade 用 fsm.onStateEntered 做 retire，把 PlaybackHandle
+        //    排 grace 的那个回调顶掉了，自然播完的效果永远停在 Completed。
+        //    本测试只推进时间，【不发任何事件】—— 这才是真实运行时的样子。
+        val (h, _, sched) = build(capacity = 8)
+        h.playEffect(CipherHapticSemantic.ITEM_DISSOLVE)
+        assertEquals(CipherHapticEngineState.RUNNING, h.engineState())
+
+        sched.advance(5_000)          // 只推时间：end-timer → NATURAL_END → grace → Reclaimed
+        assertEquals(CipherHapticEngineState.IDLE, h.engineState(),
+                     "★ 自然播完后必须自行回收，否则 activeHandles 只增不减")
+        assertEquals(0, sched.pendingTimers(), "回收后不得残留定时器")
+    }
+
+    @Test
     fun `观察者可注销 —— 否则必然泄漏`() {
         val (h, _) = build()
         val obs = object : MuteStateObserver {

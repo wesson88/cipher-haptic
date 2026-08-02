@@ -70,6 +70,55 @@ class TuningActivity : Activity() {
         stress = StressHarness(haptic) { log(it) }
         setContentView(buildUi())
         refreshStatus()
+        handleIntent(intent)
+    }
+
+    override fun onNewIntent(intent: android.content.Intent?) {
+        super.onNewIntent(intent)
+        handleIntent(intent)
+    }
+
+    /**
+     * **adb 可驱动** —— P0 验证要在多台真机上重复同一组操作，手点不可复现也不可脚本化。
+     *
+     * ```
+     * adb shell am start -n com.cipherlex.haptic.demo/.TuningActivity      *     --es play item.dissolve
+     * adb shell am start -n … --es stress 500      # 压测并断言不变式
+     * adb shell am start -n … --es dump 1          # 把状态/指标/延迟打进 logcat
+     * ```
+     *
+     * 结果一律同时写 logcat（tag `CipherHapticTuner`），便于 `adb logcat` 采集。
+     */
+    private fun handleIntent(intent: android.content.Intent?) {
+        val i = intent ?: return
+        i.getStringExtra("play")?.let { id ->
+            val sem = CipherHapticSemantic.entries.firstOrNull { it.id == id }
+            if (sem == null) log("未知语义：$id") else {
+                haptic.playEffect(sem)
+                log("adb play($id)")
+            }
+        }
+        i.getStringExtra("stress")?.toIntOrNull()?.let { n ->
+            // 静息上限按操作数缩放：2000 次 burst 会在串行 scheduler 上排出很深的队列，
+            // 固定 3s 读到的是【中间态】，会把正常排空误判成泄漏。
+            stress.runRound(n, maxOf(5_000L, n * 25L)) { refreshStatus() }
+        }
+        if (i.hasExtra("dump")) dumpAll()
+        refreshStatus()
+    }
+
+    private fun dumpAll() {
+        val c = haptic.hardwareCapabilities()
+        // V4 的原始判定依据，一行一个键值，便于脚本 grep
+        android.util.Log.i(TAG, "V4 hardwareClass=${c.hardwareClass}")
+        android.util.Log.i(TAG, "V4 supportsSharpness=${c.supportsSharpness}")
+        android.util.Log.i(TAG, "V4 supportsBackgroundPlayback=${c.supportsBackgroundPlayback}")
+        android.util.Log.i(TAG, "V4 systemHapticsEnabled=${c.systemHapticsEnabled}")
+        haptic.metricsSnapshot().summary().lines().forEach {
+            android.util.Log.i(TAG, "METRICS $it")
+        }
+        android.util.Log.i(TAG, "STATES ${haptic.debugHandleStates()}")
+        stats.report().lines().forEach { android.util.Log.i(TAG, "V5 $it") }
     }
 
     // ── UI ───────────────────────────────────────────────────────────
@@ -169,11 +218,11 @@ class TuningActivity : Activity() {
             textSize = 11f
             setTextColor(Color.parseColor("#8A6D3B"))
         })
-        root.addView(button("压测 200 次随机操作 → 静息 3s → 断言") {
-            stress.runRound(200, 3_000) { refreshStatus() }
+        root.addView(button("压测 200 次随机操作 → 等静息 → 断言") {
+            stress.runRound(200, 5_000) { refreshStatus() }
         })
-        root.addView(button("压测 2000 次（抢占风暴）→ 静息 5s → 断言") {
-            stress.runRound(2_000, 5_000) { refreshStatus() }
+        root.addView(button("压测 2000 次（抢占风暴）→ 等静息 → 断言") {
+            stress.runRound(2_000, 50_000) { refreshStatus() }
         })
         metricsView = TextView(this).apply {
             typeface = android.graphics.Typeface.MONOSPACE
@@ -240,6 +289,7 @@ class TuningActivity : Activity() {
     }
 
     private fun log(line: String) {
+        android.util.Log.i(TAG, line)          // 同时进 logcat —— 真机排查看不到屏幕上的 TextView
         logLines.addFirst(line)
         while (logLines.size > 40) logLines.removeLast()
         runOnUiThread { logView.text = logLines.joinToString("\n") }
@@ -267,4 +317,8 @@ class TuningActivity : Activity() {
     }
 
     private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
+
+    private companion object {
+        const val TAG = "CipherHapticTuner"
+    }
 }

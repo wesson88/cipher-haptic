@@ -55,7 +55,19 @@ class SpecLoader(runtimeJson: String) {
 
     fun kindOf(effectId: String): WaveKind = WaveKind.from(eff(effectId).getString("kind"))
 
-    fun neutralEvents(effectId: String): List<IrEvent> {
+    // 中立事件是【不可变的】—— 它只依赖 spec 数据，与 globalScale / 硬件档无关
+    // （那两者在 resolve 里后置作用）。故可安全缓存。
+    //
+    // ⚠️ 这不是提前优化：真机实测 T0→T1 p50=0.240ms 占软件延迟 7.8%，落在 V5 §6.2b
+    //    决策规则的"5–15%：先做语言层优化（缓存 IR、避免重复解析）后复测"一档。
+    //    没有这次测量，就不会知道每次播放都在重走一遍 JSON 数组并分配对象。
+    private val eventCache = HashMap<String, List<IrEvent>>()
+
+    fun neutralEvents(effectId: String): List<IrEvent> = eventCache.getOrPut(effectId) {
+        parseEvents(effectId)
+    }
+
+    private fun parseEvents(effectId: String): List<IrEvent> {
         val arr = eff(effectId).getJSONArray("events")
         val out = ArrayList<IrEvent>(arr.length())
         for (i in 0 until arr.length()) {
@@ -71,7 +83,12 @@ class SpecLoader(runtimeJson: String) {
         return out.sortedBy { it.atMs }
     }
 
-    fun continuousOf(effectId: String): ContinuousSpec? {
+    private val continuousCache = HashMap<String, ContinuousSpec?>()
+
+    fun continuousOf(effectId: String): ContinuousSpec? =
+        continuousCache.getOrPut(effectId) { parseContinuous(effectId) }
+
+    private fun parseContinuous(effectId: String): ContinuousSpec? {
         val c = eff(effectId).optJSONObject("continuous") ?: return null
         return ContinuousSpec(
             initialIntensity = c.getDouble("initialIntensity").toFloat(),
@@ -83,7 +100,12 @@ class SpecLoader(runtimeJson: String) {
         )
     }
 
-    fun degradeCell(effectId: String, hw: HardwareClass): DegradeCell {
+    private val cellCache = HashMap<String, DegradeCell>()
+
+    fun degradeCell(effectId: String, hw: HardwareClass): DegradeCell =
+        cellCache.getOrPut("$effectId/${hw.name}") { parseCell(effectId, hw) }
+
+    private fun parseCell(effectId: String, hw: HardwareClass): DegradeCell {
         val row = degradationJson.optJSONObject(effectId)
             ?: error("degradation 缺格：$effectId（CI 规则 8）")
         val c = row.optJSONObject(hw.name)

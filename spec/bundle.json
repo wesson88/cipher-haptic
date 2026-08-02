@@ -613,6 +613,17 @@
       "status": "verified",
       "title": "连续通道并发路数（v1.3.2 新增）",
       "verify": null
+    },
+    "P-21": {
+      "android": "ColorOS 把短脉冲段整体换成自家预烘焙波形：`createWaveform` 提交的 15/20/25ms 脉冲全部变成 45ms 的 `OplusPrebakedSegment{id=2}`；静默间隔与振幅比例保留",
+      "class": "C",
+      "ios": "无此现象",
+      "metric": null,
+      "residual": "脉冲起点整体后移：`glitch_dissolve` 设计 0/40/100 → 实测 0/65/150（末击晚 50ms）；`magnetic_snap` 0/40 → 0/65；`message_ping` 0/120 → 0/140。验证方式：真机 `dumpsys vibrator_manager` 比对 played 段",
+      "resolution": "无法弥合。契约层面明确：`durationMs` 在 Android 是建议值不是保证值；短脉冲效果的实际时序由 OEM 决定",
+      "status": "pending（需多 OEM 采样）",
+      "title": "OEM ROM 替换短脉冲波形（2026-08-02 真机实测）",
+      "verify": null
     }
   },
   "semantics": {
