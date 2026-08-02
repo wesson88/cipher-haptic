@@ -23,6 +23,13 @@ class PlaybackFsm(
     /** 非法 (状态,事件) 组合的记录。**忽略 + 告警**，绝不崩溃。 */
     val illegal = mutableListOf<String>()
 
+    /**
+     * 进入新状态时的观察点。**不是迁移表的一部分** —— 迁移表只描述"状态怎么变"，
+     * 资源与定时器归 [PlaybackActions] 和宿主。这里让宿主能对"进了哪个态"作出反应
+     * （如 Completed/Cancelled 排 grace 定时器），而不必往表里塞动作。
+     */
+    var onStateEntered: ((String) -> Unit)? = null
+
     fun send(event: String) {
         val t = table.lookup(state, event, kind, category)
         if (t == null) {
@@ -34,8 +41,10 @@ class PlaybackFsm(
             illegal += "$event in $state (declared illegal)"
             return
         }
+        val from = state
         state = t.to
         if (t.action != "none") actions.invoke(t.action)
+        if (t.to != from) onStateEntered?.invoke(t.to)
     }
 }
 

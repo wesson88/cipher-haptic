@@ -48,12 +48,21 @@ class PlaybackHandle(
     private var endTimer: HapticScheduler.Cancellable? = null
     private var idleTimer: HapticScheduler.Cancellable? = null
     private var keepAliveTimer: HapticScheduler.Cancellable? = null
+    private var graceTimer: HapticScheduler.Cancellable? = null
     private var wakeLockHeld = false
 
     /** 供抢占策略读取（§8.2 `activeSnapshot`）。 */
     val state: String get() = fsm.state
 
-    fun attach(fsm: PlaybackFsm) { this.fsm = fsm }
+    fun attach(fsm: PlaybackFsm) {
+        this.fsm = fsm
+        // Completed / Cancelled 都要排 grace，但迁移表里 NATURAL_END→Completed 的
+        // action 是 none（状态机只管"自己怎么活怎么死"，不管资源）。故在此挂一个
+        // 进入终态的观察点，而不是往迁移表里塞一个 action —— 保持"迁移表是纯逻辑"。
+        fsm.onStateEntered = { st ->
+            if (st == "Completed" || st == "Cancelled") startGraceTimer()
+        }
+    }
 
     /**
      * `PlaybackActions` 的 Android 实现 —— **各端唯一不共用的部分**。
@@ -72,7 +81,7 @@ class PlaybackHandle(
                 "startKeepAlive" -> startKeepAlive()
                 "clearKeepAlive" -> { keepAliveTimer?.cancel(); keepAliveTimer = null }
                 "suspend" -> { stopMotor(); cancelEndTimer() }
-                "stop" -> { stopMotor(); cancelAllTimers() }
+                "stop" -> { stopMotor(); cancelAllTimers(); startGraceTimer() }
                 "report" -> onMetric("fail:${resolved.semanticId}")
                 "release" -> release()
                 "none" -> Unit
@@ -92,6 +101,8 @@ class PlaybackHandle(
                 val c = resolved.continuous!!
                 val (i, _) = coalescer.latest() ?: (c.initialIntensity to c.initialSharpness)
                 sendContinuous(i)
+                // 起播这一发绕过了 coalescer，必须补登记，否则节流从第二次才生效
+                coalescer.markSentAt(scheduler.nowMs())
             } else if (useComposition) {
                 gateway.vibrateComposition(AndroidTranslator.toComposition(resolved))
             } else {
@@ -146,6 +157,21 @@ class PlaybackHandle(
 
     private fun restartIdleTimer() = startIdleTimer()
 
+    /**
+     * grace 窗口 —— 进入 `Completed` / `Cancelled` 后排，到期发 `GRACE_EXPIRED` 回收。
+     *
+     * ⚠️ **这条曾整个漏掉**：`GRACE_EXPIRED` 是迁移表里的事件，但没有任何动作排它的
+     * 定时器，于是 handle 永远停在 `Cancelled`，`activeHandles` 清不掉 —— 正是不变式 1
+     * 要防的泄漏。fuzz 没抓到是因为收尾时我手动发了 `GRACE_EXPIRED`，**把缺失的
+     * 定时器替代掉了**；facade 层的 `stopAllEffects` 一测就露馅。
+     *
+     * 教训：fuzz 手动补发的事件会掩盖"没人产生这个事件"这类缺陷。
+     */
+    private fun startGraceTimer() {
+        graceTimer?.cancel()
+        graceTimer = scheduler.schedule(GRACE_MS) { fsm.send("GRACE_EXPIRED") }
+    }
+
     private fun startKeepAlive() {
         keepAliveTimer?.cancel()
         keepAliveTimer = scheduler.schedule(KEEPALIVE_MS) { fsm.send("CANCEL") }
@@ -157,6 +183,11 @@ class PlaybackHandle(
         cancelEndTimer()
         idleTimer?.cancel(); idleTimer = null
         keepAliveTimer?.cancel(); keepAliveTimer = null
+    }
+
+    private fun cancelEveryTimer() {
+        cancelAllTimers()
+        graceTimer?.cancel(); graceTimer = null
     }
 
     // ── wake lock ───────────────────────────────────────────────────
@@ -174,7 +205,7 @@ class PlaybackHandle(
 
     /** **唯一的资源释放点。** finally 语义 —— 但"绝不泄漏"依赖状态机可达性，不是它本身。 */
     private fun release() {
-        cancelAllTimers()
+        cancelEveryTimer()
         coalescer.reset()
         if (wakeLockHeld) {
             wakeLock.release()
@@ -184,7 +215,8 @@ class PlaybackHandle(
 
     /** 测试断言用：是否还持有任何资源。 */
     fun anyResourceHeld(): Boolean =
-        wakeLockHeld || endTimer != null || idleTimer != null || keepAliveTimer != null
+        wakeLockHeld || endTimer != null || idleTimer != null ||
+            keepAliveTimer != null || graceTimer != null
 
     companion object {
         /**
@@ -192,6 +224,13 @@ class PlaybackHandle(
          * ⚠️ **待实测**（性能 §5.4）；且 iOS 侧可行性本身未定（P-06 / V1）。
          */
         const val KEEPALIVE_MS = 30_000L
+
+        /**
+         * grace 窗口：播完/取消后不立即释放，留时间让马达制动收尾（§五.2）。
+         * ⚠️ **待实测**（性能 §5.4）—— v2 写"如 50ms"，依据是"马达有几十 ms 制动"，
+         * 但 LRA 主动制动通常远短于此。
+         */
+        const val GRACE_MS = 50L
     }
 }
 

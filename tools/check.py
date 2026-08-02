@@ -17,6 +17,7 @@ contract-check —— CI 校验器
 from __future__ import annotations
 
 import argparse
+import io
 import itertools
 import os
 import re
@@ -161,6 +162,38 @@ def rule_7(s: Spec) -> list[str]:
             if m in d:
                 fails.append(f"{label} 标识符碰撞：{k} 与 {d[m]} 都派生出 {m}")
             d[m] = k
+    return fails
+
+
+def rule_contract() -> list[str]:
+    """
+    骨架 §六.4①：`contracts.md` 的方法签名清单 vs 双端 facade 实现。
+
+    **以方法签名清单对拍，不以条目数对拍** —— 计数口径在这套文档里错过四次
+    （9 / 12 / 13 / 19），根因都是把"能力条目"当"方法数"。签名是唯一不含糊的对拍单位。
+
+    iOS 侧待 Swift 骨架就位后接入同一函数。
+    """
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    contracts = os.path.join(root, "spec", "contracts.md")
+    facade = os.path.join(root, "android", "library", "src", "main", "kotlin",
+                          "com", "cipherlex", "haptic", "CipherHaptic.kt")
+    if not os.path.isfile(contracts):
+        return ["spec/contracts.md 不存在"]
+    if not os.path.isfile(facade):
+        return []
+    c = io.open(contracts, encoding="utf-8").read()
+    k = io.open(facade, encoding="utf-8").read()
+    rows = re.findall(r"^[|] (\d+) [|] `(.+?)`", c, re.M)
+    if not rows:
+        return ["contracts.md 未解析出任何签名行"]
+    fails = []
+    for num, sig in rows:
+        m = re.search(r"func (\w+)", sig)
+        if not m:
+            fails.append("contracts.md 第 %s 行解析不出方法名：%s" % (num, sig))
+        elif ("fun %s(" % m.group(1)) not in k:
+            fails.append("Kotlin facade 缺方法 #%s %s()" % (num, m.group(1)))
     return fails
 
 
@@ -363,6 +396,7 @@ def main() -> int:
     r.add("6", "中立源生成的双端数组 == SSOT 手写镜像", rule_6(s))
     r.add("7", "语义 key 正则 + 跨语言派生无碰撞", rule_7(s))
     r.add("8", "降级矩阵全覆盖", rule_8(s))
+    r.add("CT", "contracts.md 签名 vs facade（骨架 §六.4①）", rule_contract())
     r.add("11", "category/protected 无双写漂移", rule_11(s))
     r.add("12", "降级 action 前置条件", p12)
     r.add("13", "全矩阵求值产出合法 IR", m13)

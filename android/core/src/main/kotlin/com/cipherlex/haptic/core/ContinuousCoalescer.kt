@@ -45,6 +45,18 @@ class ContinuousCoalescer(
         return i to (latestSharpness ?: 0f)
     }
 
+    /**
+     * 告知"平台已经收到过一次值了"——由起播路径调用。
+     *
+     * ⚠️ **不登记会有真后果**：起播时 `submit` 直接把强度送给了平台（绕过本类），
+     * 若 `lastSentAt` 仍是初始值，起播后 16ms 内的第一次 `update` 会被判为
+     * "距上次发送足够久"而**立即再发一次** —— 起播瞬间连发两条平台命令，
+     * 且 trailing coalesce 的节流从第二次才真正开始生效。
+     */
+    fun markSentAt(nowMs: Long) {
+        lastSentAt = nowMs
+    }
+
     /** 平台就绪后的更新（v4 `applyParams`）：trailing coalesce。 */
     fun update(intensity: Float, sharpness: Float) {
         latestIntensity = intensity
