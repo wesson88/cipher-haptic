@@ -21,10 +21,10 @@ import kotlin.test.fail
 class GoldenTest {
 
     private val repoRoot = File(System.getProperty("user.dir")).parentFile.parentFile
-    private val bundle = File(repoRoot, "spec/bundle.json")
+    private val runtime = File(repoRoot, "spec/runtime.min.json")
     private val golden = File(repoRoot, "spec/golden.json")
 
-    private val loader by lazy { SpecLoader(bundle.readText()) }
+    private val loader by lazy { SpecLoader(runtime.readText()) }
 
     @Test
     fun `golden 用例逐字段等价`() {

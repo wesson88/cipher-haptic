@@ -1,6 +1,5 @@
 package com.cipherlex.haptic.core
 
-import org.json.JSONObject
 import java.io.File
 import kotlin.random.Random
 import kotlin.test.Test
@@ -19,11 +18,11 @@ import kotlin.test.assertTrue
  */
 class FsmInvariantTest {
 
-    private val bundle = JSONObject(
-        File(File(System.getProperty("user.dir")).parentFile.parentFile, "spec/bundle.json")
+    private val loader = SpecLoader(
+        File(File(System.getProperty("user.dir")).parentFile.parentFile, "spec/runtime.min.json")
             .readText()
     )
-    private val table = TransitionTable.from(bundle.getJSONObject("transitions"))
+    private val table = TransitionTable.from(loader.transitions)
 
     /** 模拟 PlaybackActions 持有的资源。 */
     private class Res : PlaybackActions {

@@ -25,10 +25,10 @@ kotlin {
     }
 }
 
-// spec/bundle.json 构建时拷入 resources —— 单向注入，绝不反向依赖（骨架原则 3）。
+// spec/runtime.min.json 构建时拷入 resources（不是 bundle.json —— 后者含 parity 与双端镜像,运行时不需要） —— 单向注入，绝不反向依赖（骨架原则 3）。
 // 注意方向：spec/ 是生成产物，core 只读它；core 绝不回写 spec/。
 val copySpec by tasks.registering(Copy::class) {
-    from(rootProject.file("../spec/bundle.json"))
+    from(rootProject.file("../spec/runtime.min.json"))
     into(layout.buildDirectory.dir("generated/spec"))
 }
 

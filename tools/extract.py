@@ -328,6 +328,97 @@ def build_bundle(vault: str, artifacts: dict[str, str]) -> str:
     return json.dumps(bundle, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
 
 
+def build_runtime(artifacts: dict[str, str]) -> str:
+    """
+    spec/runtime.min.json —— **真正内嵌进 APK / IPA 的产物**。
+
+    与 `bundle.json` 的分工：
+
+    | | 内容 | 消费者 |
+    |---|---|---|
+    | `bundle.json` | 完整、带缩进、含 parity 与双端镜像 | CI、评审、人 |
+    | `runtime.min.json` | 归一化、压缩、只留运行时真正要读的 | 各端 loader |
+
+    **两件事一起做：**
+
+    ① **剔除运行时不需要的**
+       - `parity`（占 21%）—— 20 条双端差异的中文描述，是给 CI 与人看的。
+         **把平台差异说明文档打进 App 二进制是不对的**，与体积大小无关。
+       - `effects.*.android` 镜像 —— SSOT v1.3.0 明写"仅供 CI diff 校验，运行时不读"。
+       - `effects.*.category` —— 派生自 semantics（CI 规则 11 校验一致性），运行时读 semantics。
+       - `semantics.*.desc` / `since` —— 人读字段。
+
+    ② **归一化成 IR 形态**（这条比省体积更重要）
+       事件直接产出 `{atMs, durationMs, intensity, sharpness, kind}`，而不是过渡期的
+       `ios_core_haptics.events[{type, time_ms, …}]`。于是：
+       - 两端 loader 都不必再写 `hapticTransient → pulse` 这类映射，少一处双端可漂移点；
+       - 等 `effects.yaml` 迁到 v2.0.0 中立格式（见 IR 文档 §五），**本产物一个字都不用改**，
+         loader 也不用动 —— 迁移被挡在生成器里了。
+    """
+    import json
+
+    semantics = yaml.safe_load(artifacts["semantics.yaml"])["semantics"]
+    effects = yaml.safe_load(artifacts["effects.yaml"])["effects"]
+    degradation = yaml.safe_load(artifacts["degradation.yaml"])["degradation"]
+    transitions = yaml.safe_load(artifacts["transitions.yaml"])
+
+    out_sem = {}
+    for sid, s in semantics.items():
+        e = {"effect": s["effect"], "category": s["category"]}
+        if s.get("protected"):
+            e["protected"] = True
+        if s.get("deprecated_by"):                     # 弃用治理：loader 转发 + 告警
+            e["deprecatedBy"] = s["deprecated_by"]
+        out_sem[sid] = e
+
+    out_eff = {}
+    for eid, e in effects.items():
+        evs = []
+        for ev in e.get("ios_core_haptics", {}).get("events", []):
+            if "duration_ms" not in ev:
+                raise ExtractError(
+                    f"{eid}: 事件缺 duration_ms —— transient 也必填（SSOT §1.1）")
+            evs.append({
+                "atMs": int(ev["time_ms"]),
+                "durationMs": int(ev["duration_ms"]),
+                "intensity": float(ev["intensity"]),
+                "sharpness": float(ev["sharpness"]),
+                "kind": "pulse" if ev["type"] == "hapticTransient" else "sustain",
+            })
+        item = {"kind": e.get("kind", "oneshot"), "events": evs}
+        if e.get("loop_gap_ms"):
+            item["loopGapMs"] = int(e["loop_gap_ms"])
+        c = e.get("continuous")
+        if c is not None:
+            item["continuous"] = {
+                "initialIntensity": float(c["initial_intensity"]),
+                "initialSharpness": float(c["initial_sharpness"]),
+                "maxDurationMs": int(c["max_duration_ms"]),
+                "segmentMs": int(c["segment_ms"]),
+                # null = 待实测（性能 §5.4），loader 用内置默认并告警
+                "idleTimeoutMs": c.get("idle_timeout_ms"),
+            }
+        out_eff[eid] = item
+
+    key_map = {"duration_ms": "durationMs", "amplitude_scale": "amplitudeScale",
+               "duration_scale": "durationScale", "interval_ms": "intervalMs"}
+    out_deg = {
+        eid: {hw: {key_map.get(k, k): v for k, v in cell.items()}
+              for hw, cell in row.items()}
+        for eid, row in degradation.items()
+    }
+
+    runtime = {
+        "semantics": out_sem,
+        "effects": out_eff,
+        "degradation": out_deg,
+        "transitions": transitions,
+    }
+    # 压缩：无缩进、无多余空格。这不是给人读的，人读 bundle.json
+    return json.dumps(runtime, ensure_ascii=False, separators=(",", ":"),
+                      sort_keys=True) + "\n"
+
+
 ARTIFACTS = [
     ("semantics.yaml",   extract_semantics,   "语义层与中立IR §2.2"),
     ("effects.yaml",     extract_effects,     "波形数据SSOT §二"),
@@ -349,6 +440,7 @@ def build(vault: str) -> dict[str, str]:
         else:
             out[name] = body
     out["bundle.json"] = build_bundle(vault, raw)
+    out["runtime.min.json"] = build_runtime(raw)
     return out
 
 
