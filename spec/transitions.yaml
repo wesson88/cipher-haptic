@@ -1,0 +1,105 @@
+# ══════════════════════════════════════════════════════════════════
+# 【生成产物 · 禁止手改】
+# 由 tools/extract.py 从 vault SSOT 文档单向生成。
+# 唯一写入点是 vault 文档；改这里的内容会在 CI 规则 10 被逐字节 diff 打回。
+# 来源：句柄状态机 §十
+# ══════════════════════════════════════════════════════════════════
+# CipherHaptic PlaybackHandle FSM · v4 · 2026-08-02
+# v2(7态8事件) 的修订点见本文档 §四 开头；问题台账见设计评审文档 §四。
+version: 4
+states: [Pending, Submitting, Active, Paused, Completed, Cancelled, Failed, Reclaimed]
+events: [SUBMIT, SUBMIT_OK, NATURAL_END, UPDATE, CANCEL, SUSPEND, RESUME, FAIL, GRACE_EXPIRED, EXPIRE]
+
+# ⚠️ 键名是 `event:` 而不是 `on:` —— `on` 是 YAML 1.1 的布尔字面量（同 yes/no/off）,
+#    PyYAML / snakeyaml(Kotlin) / Yams(Swift) 都会把它解析成布尔键 True,
+#    双端 loader 会【一起】坏掉。v2–v4 一直埋着这个雷,2026-08-02 写 loader 时撞出来。
+# ── 守卫求值规则（v4 明确）────────────────────────────────────────────────
+#   ① 同一 (from, on) 下的多条 when 守卫【必须互斥且完备】,不依赖表内顺序。
+#   ② 覆盖不到的组合必须写成 `illegal: true` 的【显式声明行】,不能靠"表里没有"。
+#      illegal 行的运行时行为 = 保持当前态 + 不执行动作 + 告警（与缺席相同）,
+#      但它把"故意非法"与"忘了写"区分开 —— 后者正是 v3 漏掉 continuous 的形态。
+#   这是不变式 4,由 CI 对 kind × cat 全组合穷举校验。
+
+transitions:
+  # ── 提交（命令/结果分离：SUBMIT 是命令，SUBMIT_OK / FAIL 是结果）────────────
+  - { from: Pending,    event: SUBMIT,    to: Submitting, action: submit }
+  - { from: Pending,    event: CANCEL,    to: Cancelled,  action: none }
+  - { from: Pending,    event: SUSPEND,   to: Cancelled,  action: none }    # v3: 不补播过期反馈(§4.3)
+
+  - { from: Submitting, event: SUBMIT_OK, to: Active, action: startEndTimer,  when: "kind!=continuous" }
+  - { from: Submitting, event: SUBMIT_OK, to: Active, action: startIdleTimer, when: "kind=continuous" }
+    # v4: continuous 的 totalDurationMs 恒为 0(IR §3.2b),无条件 startEndTimer 会排一个
+    #     立即触发的定时器 → Active+NATURAL_END(kind=continuous) 在 v3 表里无匹配转移
+    #     → 每次起手势刷一条 illegal 告警。continuous 改由【空闲】计时驱动结束。
+  - { from: Submitting, event: FAIL,      to: Failed,     action: report }
+  - { from: Submitting, event: CANCEL,    to: Cancelled,  action: stop }    # 可能已下发,stop 兜底
+
+  # ── 自然结束（按 kind 分流）──────────────────────────────────────────────
+  - { from: Active, event: NATURAL_END, to: Completed,  action: none,     when: "kind=oneshot" }
+  - { from: Active, event: NATURAL_END, to: Submitting, action: resubmit, when: "kind=looping" }
+    # v3: looping 重激活经 Submitting,使 resubmit 失败有 FAIL 出口(v2 会永久卡 Active)
+  - { from: Active, event: NATURAL_END, to: Completed,  action: none,     when: "kind=continuous" }
+    # v4: continuous 的 NATURAL_END 由【空闲超时】产生,不由时长推断。
+    #     复用同一事件而非新增 IDLE_EXPIRED —— 语义完全相同（自行结束,非取消非失败）,
+    #     事件空间不该为"哪个定时器发的"而膨胀。
+
+  # ── 连续通道参数更新（v4 新增）──────────────────────────────────────────
+  - { from: Active, event: UPDATE, to: Active, action: applyParams, when: "kind=continuous" }
+  - { from: Active, event: UPDATE, to: Active, action: none, when: "kind!=continuous", illegal: true }
+    # ↑ 显式声明"故意非法"（保持当前态 + 告警,行为与"表里没有这一行"相同）。
+    #   存在的意义是让不变式 4 能区分【故意非法】与【忘了写】—— 后者正是 v3 漏掉
+    #   continuous 三处建模的形态。沉默的缺席不可审计。
+    # applyParams = trailing coalesce 送最新值(§七.5) + 重置 idle-timer。
+    # 不改变生命周期状态,但【必须】在 FSM 内：① 它重置驱动 NATURAL_END 的定时器；
+    # ② 终态必须能吸收它(见文末吸收行),否则"idle 超时后手指又动了"这条高频路径
+    #    会持续刷 illegal 告警 —— 与 v3 修掉的 grace 窗口告警噪音是同一个失败模式。
+    # 平台调用失败由 PlaybackActions 内部吸收,不向 FSM 发 FAIL（见本节末"重排失败语义"）。
+
+  # ── 中断 ────────────────────────────────────────────────────────────────
+  - { from: Active, event: CANCEL, to: Cancelled, action: stop }
+  - { from: Active, event: FAIL,   to: Failed,    action: report }          # v3 新增: 堵 wake lock 泄漏
+
+  # ── 后台/前台（v4：continuous 不进 Paused）──────────────────────────────
+  - { from: Active, event: SUSPEND, to: Cancelled, action: stop,           when: "kind=continuous" }
+    # v4: 手势的驱动源是手指。切后台再回来时手指早已离开,resubmit 会用【过期参数】
+    #     重启一个没人驱动的触觉,一路跑到 idle 超时才停。continuous 直接终结,不可恢复。
+    #     与 v3 的 `Pending + SUSPEND → Cancelled`（不补播过期反馈）是同一条理由。
+  - { from: Active, event: SUSPEND, to: Paused,  action: suspend,       when: "kind!=continuous && cat!=critical" }
+  - { from: Active, event: SUSPEND, to: Active,  action: startKeepAlive, when: "kind!=continuous && cat=critical" }
+  - { from: Active, event: RESUME,  to: Active,  action: clearKeepAlive, when: "cat=critical" }
+  - { from: Active, event: RESUME,  to: Active,  action: none, when: "cat!=critical", silent: true }
+    # v4.1: SUSPEND/RESUME 是【广播给所有 handle】的生命周期事件,绝大多数 handle 并不在
+    #   Paused；后台期间新建的 handle 也会一路走到 Active 再收到 RESUME。对它们告警是噪音,
+    #   与 §4.4 修掉的 grace 窗口噪音同类。静默吸收,不是 illegal。
+    #   ——本行由 CI 不变式 4 首跑机械查出（v4 表只覆盖了 cat=critical,另 6 个组合命中 0 条）。
+    # v3 新增 ↑: 否则 critical 回前台后保活计时仍会到期,掐掉正在前台播放的告警(§4.2)
+
+  - { from: Paused, event: RESUME,      to: Submitting, action: resubmit }
+  - { from: Paused, event: CANCEL,      to: Cancelled,  action: none }
+  - { from: Paused, event: FAIL,        to: Failed,     action: report }    # v3 新增
+  - { from: Paused, event: NATURAL_END, to: Paused,     action: none }      # v3: 吸收在途的迟到定时器(§4.1)
+
+  # ── 回收 ────────────────────────────────────────────────────────────────
+  - { from: Completed, event: GRACE_EXPIRED, to: Reclaimed, action: release }
+  - { from: Cancelled, event: GRACE_EXPIRED, to: Reclaimed, action: release }
+  - { from: Failed,    event: EXPIRE,        to: Reclaimed, action: release }  # 不 grace,立即回收
+
+  # ── 终态吸收（v3 修订：grace 窗口内任何"迟到"事件都不告警）──
+  #   迟到事件 = CANCEL / NATURAL_END / SUSPEND / RESUME / FAIL
+  #   （如 critical 后台保活到期→Cancelled→回前台发 RESUME；grace 内 stopAll；在途定时器）
+  #   例外：GRACE_EXPIRED / EXPIRE 触发 release 回收,不吸收；SUBMIT / SUBMIT_OK 对终态是逻辑错误,仍告警
+  #   v4 把 UPDATE 加入吸收集：idle 超时结束后手指又动一下是【高频正常路径】,不是逻辑错误
+  - { from: Completed, event: [CANCEL, NATURAL_END, UPDATE, SUSPEND, RESUME, FAIL], to: Completed, action: none, silent: true }
+  - { from: Cancelled, event: [CANCEL, NATURAL_END, UPDATE, SUSPEND, RESUME, FAIL], to: Cancelled, action: none, silent: true }
+  - { from: Failed,    event: [CANCEL, NATURAL_END, UPDATE, SUSPEND, RESUME, FAIL], to: Failed,    action: none, silent: true }
+  - { from: Reclaimed, event: "*",                                                  to: Reclaimed, action: none, silent: true }
+
+# ── 定时器绑定（v3：定时器是一等输入，见 §4.1）─────────────────────────────
+#   [end-timer]  submit/resubmit → 建/重建；suspend/stop/release → 取消
+#   [idle-timer] startIdleTimer → 建（仅 kind=continuous）；applyParams → 重置；
+#                stop/release → 取消。到期发 NATURAL_END。
+#   两种定时器【互斥】：同一 handle 上不会同时存在（kind 决定用哪一种）。
+#   所有定时器回调必须 marshal 到 HapticScheduler（见 §七.2b）
+# ── 引擎自愈中断：engine reset → 对所有 Active/Paused/Submitting 发 CANCEL(reason=engine_reset)
+# ── 抢占：DecisionPipeline 算出 preemptTargets → 对其发 CANCEL(reason=preempted)
+# ── 非法 (state,event) 组合 = 忽略 + debug 警告（silent:true 的吸收转移不告警）

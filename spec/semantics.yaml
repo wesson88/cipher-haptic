@@ -1,0 +1,67 @@
+# ══════════════════════════════════════════════════════════════════
+# 【生成产物 · 禁止手改】
+# 由 tools/extract.py 从 vault SSOT 文档单向生成。
+# 唯一写入点是 vault 文档；改这里的内容会在 CI 规则 10 被逐字节 diff 打回。
+# 来源：语义层与中立IR §2.2
+# ══════════════════════════════════════════════════════════════════
+# ── schema ────────────────────────────────────────────────────
+# semantics:
+#   <semantic_id>:                     # 必填。命名规范见 2.3
+#     effect:   <effect_id>            # 必填。必须存在于 effects.yaml
+#     category: ux | alert | critical  # 必填。category 归属在此,不在物理效果上（见 2.4）
+#     desc:     <string>               # 必填。给业务方看的一句话说明
+#     protected: <bool>                # 选填,默认 false。抢占保护(见状态机 §8.4)
+#     since:    <semver>               # 必填。引入版本,用于弃用治理
+#     deprecated_by: <semantic_id>     # 选填。弃用时指向替代者,loader 自动转发 + 告警
+# ──────────────────────────────────────────────────────────────
+
+version: "1.0.0"
+
+semantics:
+
+  # ── 内容操作 ──────────────────────────────────────────────
+  item.dissolve:
+    effect: glitch_dissolve
+    category: ux
+    desc: "内容粒子化消失（文本崩解、卡片气化）"
+    since: "1.0.0"
+
+  item.detach:
+    effect: ticket_rip
+    category: ux
+    desc: "内容被撕下/分离（撕票根、拆分卡片）"
+    since: "1.0.0"
+
+  # ── 交互反馈 ──────────────────────────────────────────────
+  selection.snap:
+    effect: magnetic_snap
+    category: ux
+    desc: "元素吸附到位（对齐、吸附、咬合）"
+    since: "1.0.0"
+
+  control.tap:
+    effect: default_ui_click
+    category: ux
+    desc: "普通控件轻触（按钮、开关、列表项）"
+    since: "1.0.0"
+
+  gesture.track:
+    effect: gesture_continuous
+    category: ux
+    desc: "手势拖拽的连续跟随反馈"
+    protected: true          # 不被普通 ux 点击打断
+    since: "1.0.0"
+
+  # ── 通知 ─────────────────────────────────────────────────
+  notify.message:
+    effect: message_ping
+    category: alert
+    desc: "普通消息/提示到达"
+    since: "1.0.0"
+
+  # ── 安全 ─────────────────────────────────────────────────
+  security.intrusion:
+    effect: anti_screenshot
+    category: critical
+    desc: "检测到防窥入侵（截屏/录屏），惩罚性强警报"
+    since: "1.0.0"

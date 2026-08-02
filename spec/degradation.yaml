@@ -1,0 +1,44 @@
+# ══════════════════════════════════════════════════════════════════
+# 【生成产物 · 禁止手改】
+# 由 tools/extract.py 从 vault SSOT 文档单向生成。
+# 唯一写入点是 vault 文档；改这里的内容会在 CI 规则 10 被逐字节 diff 打回。
+# 来源：波形数据SSOT §三
+# ══════════════════════════════════════════════════════════════════
+# 降级矩阵 SSOT · v1.3.0 · 2026-08-02
+# action 语义见 §3.1；每个 cell 有且仅有一个 action,不叠加。
+degradation:
+
+  glitch_dissolve:
+    ERM_Z:              { action: forced_amplitude, duration_ms: 40 }   # 见下"ERM_Z 保底"说明
+    LINEAR_X_LIMITED:   { action: simplify, amplitude_scale: 0.5, duration_scale: 0.6 }
+    LINEAR_X_FULL:      { action: full }
+
+  ticket_rip:
+    ERM_Z:              { action: forced_amplitude, duration_ms: 60 }
+    LINEAR_X_LIMITED:   { action: tail_pulse_only }          # 仅留结尾撕断脉冲
+    LINEAR_X_FULL:      { action: full }                      # 完整阻尼 + 撕断
+
+  magnetic_snap:
+    ERM_Z:              { action: forced_amplitude, duration_ms: 40 }
+    LINEAR_X_LIMITED:   { action: single_pulse }              # 压成最强的一击
+    LINEAR_X_FULL:      { action: full }                      # 表达形式由 API 能力门决定,不在此处
+
+  anti_screenshot:
+    ERM_Z:              { action: forced_amplitude, duration_ms: 200 }  # critical 即便降级也保留最低警示
+    LINEAR_X_LIMITED:   { action: n_pulses, count: 2, interval_ms: 100 }
+    LINEAR_X_FULL:      { action: full }                      # 完整 4 击脉冲链
+
+  message_ping:
+    ERM_Z:              { action: forced_amplitude, duration_ms: 60 }
+    LINEAR_X_LIMITED:   { action: simplify, amplitude_scale: 0.5 }
+    LINEAR_X_FULL:      { action: full }
+
+  default_ui_click:
+    ERM_Z:              { action: silent }                    # 高频微反馈在 ERM 上只会变成噪音
+    LINEAR_X_LIMITED:   { action: full }                      # 有振幅控制,普通点击可完整播放
+    LINEAR_X_FULL:      { action: full }
+
+  gesture_continuous:
+    ERM_Z:              { action: silent }                    # ERM 无振幅控制,无法表达连续强度变化
+    LINEAR_X_LIMITED:   { action: amplitude_only }            # 仅 intensity 映射振幅,丢弃 sharpness
+    LINEAR_X_FULL:      { action: full }

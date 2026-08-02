@@ -1,0 +1,228 @@
+# ══════════════════════════════════════════════════════════════════
+# 【生成产物 · 禁止手改】
+# 由 tools/extract.py 从 vault SSOT 文档单向生成。
+# 唯一写入点是 vault 文档；改这里的内容会在 CI 规则 10 被逐字节 diff 打回。
+# 来源：双端差异登记表 §四（markdown 表格）
+# ══════════════════════════════════════════════════════════════════
+# 双端差异登记表 · 20 条
+
+parity:
+  P-01:
+    title: "连续通道原生语义"
+    class: "A"
+    ios: "`hapticContinuous` + `sendParameters` 实时改参"
+    android: "无 continuous 概念"
+    resolution: "恒振幅分段（`segment_ms`）+ 参数变化时取消当前段重排"
+    residual: "段边界在极端强度跳变时可感"
+    verify: "双端等价测试 + 真机主观"
+    metric: null
+    status: "verified"
+
+  P-02:
+    title: "帧对齐精度"
+    class: "B"
+    ios: "`start(atTime:)` 直接吃 hostTime，硬件级"
+    android: "只能在 `Choreographer` 回调里调 `vibrate()`，再经 binder IPC → system_server → HAL，调度级"
+    resolution: "统一弱化为\"下一 VSync 提交\"语义（`onNextFrame`），不承诺绝对时刻"
+    residual: "iOS 硬件级 / Android 调度级，OEM 差异显著；具体量待实测"
+    verify: "加速度计实测对齐误差"
+    metric: "对齐误差 p50/p95/p99，分 OEM"
+    status: "pending（V5 残差待实测）"
+
+  P-03:
+    title: "单播放取消"
+    class: "C"
+    ios: "`player.stop()` 精确停一个"
+    android: "`cancel()` 是全局的"
+    resolution: "被取消 token 若是唯一活跃振动 → `cancel()`；否则标记\"到点即停\"等自然结束"
+    residual: "并发独立取消在 Android 物理不可能"
+    verify: null
+    metric: null
+    status: "verified"
+
+  P-04:
+    title: "sharpness 维度"
+    class: "D"
+    ios: "Core Haptics 原生支持"
+    android: "完全不存在，振幅是唯一维度"
+    resolution: "`hardwareCapabilities().supportsSharpness: Bool`；文档明示 `setGlobalScale` 双端手感不等价"
+    residual: null
+    verify: null
+    metric: null
+    status: "verified"
+
+  P-05:
+    title: "多振动并存"
+    class: "C"
+    ios: "Core Haptics 真能叠加"
+    android: "单 slot，新 `vibrate` 打断旧的"
+    resolution: "抢占策略吸收（活跃 handle 队列在 Android 长度 ≈ 1）"
+    residual: "Android 无法叠加共存"
+    verify: null
+    metric: null
+    status: "verified"
+
+  P-06:
+    title: "后台播放能力"
+    class: "D"
+    ios: "haptics 仅前台可用，进 background 后 engine 被系统 stop"
+    android: "持 wake lock 可后台振动（Android 13+ 收紧中）"
+    resolution: "`hardwareCapabilities().supportsBackgroundPlayback: Bool`；`security.intrusion` 类告警须由业务方决定是否用通知/声音兜底"
+    residual: null
+    verify: null
+    metric: null
+    status: "pending（V1）"
+
+  P-07:
+    title: "硬件档探测粒度"
+    class: "C"
+    ios: "只有 `supportsHaptics` 布尔"
+    android: "只有 `hasAmplitudeControl()`"
+    resolution: "双端均产出二档；第三档降为可选配置覆盖，默认不启用"
+    residual: "`LINEAR_X_LIMITED` 无法自动识别"
+    verify: null
+    metric: null
+    status: "pending（V4）"
+
+  P-08:
+    title: "原语可用性"
+    class: "C"
+    ios: "无原语概念"
+    android: "`PRIMITIVE_*` 因机型而异，API 30+ 不保证支持"
+    resolution: "运行时 `areAllPrimitivesSupported()`，不通过退 waveform"
+    residual: "部分机型走不到 Composition 路径"
+    verify: null
+    metric: null
+    status: "verified"
+
+  P-09:
+    title: "音频会话耦合"
+    class: "C"
+    ios: "engine 绑 `AVAudioSession`"
+    android: "无此概念"
+    resolution: "iOS 侧 `playsHapticsOnly = true`，不参与 session 激活竞争"
+    residual: "iOS 独有的中断/自愈路径"
+    verify: null
+    metric: null
+    status: "pending（V2）"
+
+  P-10:
+    title: "唤醒锁"
+    class: "C"
+    ios: "无需"
+    android: "长振动可能需 partial wake lock"
+    resolution: "wake lock 绑 `PlaybackHandle`，`release` 时释放"
+    residual: "Android 独有资源；有效性本身待验证"
+    verify: null
+    metric: null
+    status: "pending（V3）"
+
+  P-11:
+    title: "player 句柄"
+    class: "A"
+    ios: "`makePlayer` 返回真句柄"
+    android: "`vibrate()` 无返回值"
+    resolution: "Android 侧虚拟句柄：自维护排程队列 + 预计结束时刻 + 取消标志"
+    residual: "无（对上层语义一致）"
+    verify: "FSM fuzz + 泄漏断言"
+    metric: null
+    status: "verified"
+
+  P-12:
+    title: "瞬时事件表达"
+    class: "A"
+    ios: "`hapticTransient` 是瞬时，无需时长"
+    android: "波形必须给定时长"
+    resolution: "IR 统一携带 `durationMs`；iOS 侧忽略，Android 侧使用"
+    residual: "无"
+    verify: "生成器黄金测试"
+    metric: null
+    status: "verified"
+
+  P-13:
+    title: "振幅取值域"
+    class: "A"
+    ios: "`0.0–1.0` 浮点"
+    android: "`0–255` 整数"
+    resolution: "IR 统一 `0.0–1.0`；`round(x*255)` 在 Android 翻译器内完成"
+    residual: "量化误差 < 1/255，不可感知"
+    verify: "单测"
+    metric: null
+    status: "verified"
+
+  P-14:
+    title: "系统触觉总开关语义"
+    class: "D"
+    ios: "「系统触感反馈」关闭后 `UIFeedbackGenerator` 静音，Core Haptics 不受影响"
+    android: "省电模式直接禁用振动"
+    resolution: "`hardwareCapabilities().systemHapticsEnabled: Bool` + `MuteStateObserver` 变更通知"
+    residual: null
+    verify: null
+    metric: null
+    status: "verified"
+
+  P-15:
+    title: "Composition API 门"
+    class: "C"
+    ios: "—"
+    android: "需 API 30+"
+    resolution: "API 能力门先于硬件档求值"
+    residual: "API 29 设备只能走 waveform"
+    verify: null
+    metric: null
+    status: "verified"
+
+  P-16:
+    title: "引擎中断自愈"
+    class: "C"
+    ios: "engine 会被系统 stop，需 `resetHandler`/`stoppedHandler` 重建"
+    android: "Vibrator 服务无\"启动\"概念"
+    resolution: "iOS 侧自愈 + 熔断；Android 侧无对应逻辑"
+    residual: "iOS 独有的熔断冷却期"
+    verify: null
+    metric: null
+    status: "verified"
+
+  P-17:
+    title: "循环实现"
+    class: "A"
+    ios: "pattern 层 repeat"
+    android: "`createWaveform(repeat = index)`"
+    resolution: "IR 用 `kind: looping` + `loopGapMs`，各端翻译"
+    residual: "无"
+    verify: "双端等价测试"
+    metric: null
+    status: "verified"
+
+  P-18:
+    title: "权限"
+    class: "C"
+    ios: "无需权限"
+    android: "需 `VIBRATE` 权限"
+    resolution: "库内声明；缺失时静默降级 + 指标"
+    residual: "Android 独有失败模式"
+    verify: null
+    metric: null
+    status: "verified"
+
+  P-19:
+    title: "时钟基准"
+    class: "A"
+    ios: "mach `hostTime`"
+    android: "`uptimeMillis`"
+    resolution: "抽象层只暴露\"下一帧\"语义，不暴露原始时钟（见 P-02）"
+    residual: "无"
+    verify: "—"
+    metric: null
+    status: "verified"
+
+  P-20:
+    title: "连续通道并发路数（v1.3.2 新增）"
+    class: "C"
+    ios: "Core Haptics 可叠加多路，技术上能支持多点"
+    android: "单 slot，物理上只能一路"
+    resolution: "契约统一降到一路（语义向弱端对齐）：`updateContinuousEffect` 是全局单例通道，第二路覆盖第一路，任一方 `end` 结束整条通道。业务方需自行仲裁多点手势"
+    residual: "iOS 侧牺牲了可用能力；且任一方 `end` 会误杀另一方——这是残差里唯一\"双端都错\"的一条"
+    verify: null
+    metric: null
+    status: "verified"
