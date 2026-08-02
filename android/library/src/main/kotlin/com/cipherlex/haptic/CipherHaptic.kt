@@ -3,7 +3,9 @@ package com.cipherlex.haptic
 import android.content.Context
 import com.cipherlex.haptic.core.Category
 import com.cipherlex.haptic.core.HapticScheduler
+import com.cipherlex.haptic.core.CipherHapticMetricsSink
 import com.cipherlex.haptic.core.LatencyProbe
+import com.cipherlex.haptic.core.MetricsCollector
 import com.cipherlex.haptic.core.HardwareClass
 import com.cipherlex.haptic.core.PreemptionPolicy
 import com.cipherlex.haptic.core.PlaybackFsm
@@ -111,7 +113,9 @@ class CipherHaptic internal constructor(
     private val capacity: Int = DEFAULT_CAPACITY,
     private val coalesceWindowMs: Long = DEFAULT_COALESCE_WINDOW_MS,
     private val probe2: LatencyProbe = LatencyProbe.NOOP,
+    private val metricsSink: CipherHapticMetricsSink = CipherHapticMetricsSink.NOOP,
 ) {
+    private val metrics = MetricsCollector { probe.hardwareClass }
     private val table = TransitionTable.from(loader.transitions)
     private val handles = LinkedHashMap<Long, PlaybackHandle>()
     private val nextId = AtomicLong(1)
@@ -244,6 +248,7 @@ class CipherHaptic internal constructor(
         preSubmit: (PlaybackHandle) -> Unit = {},
     ): PlaybackHandle? {
         val t0 = System.nanoTime()
+        metrics.onRequest()
         // ① master
         if (!masterEnabled.get()) return drop(semantic, "disabled")
         // ② system-off（P-14）  ③ dnd —— critical 绕过
@@ -255,8 +260,9 @@ class CipherHaptic internal constructor(
         // ④ scale  ⑤ degrade（silent → 不建 handle，IR §3.3③）
         val rw = loader.resolve(semantic.id, probe.hardwareClass, globalScale())
             ?: return drop(semantic, "degraded-to-silent")
-        rw.degradeTrace.firstOrNull()?.takeIf { it != "full" }?.let {
-            debugDelegate?.onDegraded(semantic.id, it)
+        rw.degradeTrace.firstOrNull()?.let {
+            metrics.onDegrade(it)
+            if (it != "full") debugDelegate?.onDegraded(semantic.id, it)
         }
 
         // ⑥ preempt —— 纯逻辑算目标，执行是发 CANCEL（§8.2）
@@ -272,7 +278,7 @@ class CipherHaptic internal constructor(
             )
         }
         PreemptionPolicy.computeTargets(rw.category, snapshot, capacity, coalesceWindowMs)
-            .forEach { handles[it]?.fsm?.send("CANCEL") }
+            .forEach { metrics.onPreempted(); handles[it]?.fsm?.send("CANCEL") }
 
         // ── T0→T1 采样：决策管线到此结束（V5 §6.2b）──────────────────
         // 这一段是【本库唯一能优化的部分】，也是"是否下沉 C++"唯一相关的度量。
@@ -281,7 +287,9 @@ class CipherHaptic internal constructor(
         // ⑦ submit —— handle 创建 + 平台提交在同一 critical section 内（§七.3）
         val useComposition = probe.canUseComposition(intArrayOf(PRIMITIVE_CLICK))
         val h = PlaybackHandle(nextId.getAndIncrement(), rw, scheduler, gateway, wakeLock,
-                               useComposition, probe2) { debugDelegate?.onStateChanged(it) }
+                               useComposition, probe2, metrics) {
+            debugDelegate?.onStateChanged(it)
+        }
         val fsm = PlaybackFsm(table, rw.kind, rw.category, h.actions)
         h.attach(fsm)
         // ⚠️ 回收必须是【推送式】：Reclaimed 由 grace 定时器驱动，而 sweep() 是拉取式的
@@ -293,7 +301,10 @@ class CipherHaptic internal constructor(
         preSubmit(h)                       // continuous 在此塞入手指当前位置
         h.fsm.send("SUBMIT")
         probe2.onSample(LatencyProbe.Segment.SOFTWARE_TOTAL, System.nanoTime() - t0)
+        if (h.fsm.state == "Active") metrics.onSubmitted() else metrics.onFail()
         sweep()
+        metrics.onActiveCountChanged(handles.size)
+        metrics.maybeReport(metricsSink, scheduler.nowMs())
         return h
     }
 
@@ -308,10 +319,19 @@ class CipherHaptic internal constructor(
             continuousHandle = h
         })
 
+    /**
+     * 管线拦截。**每一次 drop 都必须被计数** —— 这是"用户说点了没感觉"时唯一能
+     * 回答"为什么"的数据。disabled / system-off / dnd / degraded-to-silent /
+     * no-vibrator 是完全不同的产品问题，混在一起就查不出来。
+     */
     private fun drop(semantic: CipherHapticSemantic, reason: String): PlaybackHandle? {
+        metrics.onDrop(reason)
         debugDelegate?.onDropped(semantic.id, reason)
         return null
     }
+
+    /** 取当前指标快照。调音台与宿主埋点都从这里读。 */
+    fun metricsSnapshot() = metrics.snapshot()
 
     private val startedAt = HashMap<Long, Long>()
 
@@ -322,9 +342,13 @@ class CipherHaptic internal constructor(
      * （占槽判定见 [PreemptionPolicy]，只数 `Active` + `Paused`）。
      */
     private fun retire(id: Long) {
+        // 回收时仍持有资源 = 状态机有抵达不了 Reclaimed 的路径。正常恒 0。
+        // 这是压测/monkey 唯一能抓到【泄漏】的信号 —— 泄漏本身不崩溃、不报错。
+        handles[id]?.let { if (it.anyResourceHeld()) metrics.onLeakSuspect() }
         handles.remove(id)
         startedAt.remove(id)
         if (continuousHandle?.id == id) continuousHandle = null
+        metrics.onActiveCountChanged(handles.size)
     }
 
     /** 兜底清理：正常路径靠 [retire] 推送，这里只防御性地扫一遍。 */
@@ -369,6 +393,7 @@ class CipherHaptic internal constructor(
             context: Context,
             hardwareClassOverride: HardwareClass? = null,
             latencyProbe: LatencyProbe = LatencyProbe.NOOP,
+            metricsSink: CipherHapticMetricsSink = CipherHapticMetricsSink.NOOP,
         ): CipherHaptic {
             val app = context.applicationContext
             val gateway = AndroidVibratorGateway(app)
@@ -382,6 +407,7 @@ class CipherHaptic internal constructor(
                 probe = HardwareClassProbe(gateway, hardwareClassOverride),
                 frameClock = AndroidFrameClock(),
                 probe2 = latencyProbe,
+                metricsSink = metricsSink,
             )
         }
 

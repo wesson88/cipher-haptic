@@ -4,6 +4,7 @@ import com.cipherlex.haptic.core.AndroidTranslator
 import com.cipherlex.haptic.core.ContinuousCoalescer
 import com.cipherlex.haptic.core.HapticScheduler
 import com.cipherlex.haptic.core.LatencyProbe
+import com.cipherlex.haptic.core.MetricsCollector
 import com.cipherlex.haptic.core.PlaybackActions
 import com.cipherlex.haptic.core.PlaybackFsm
 import com.cipherlex.haptic.core.ResolvedWaveform
@@ -36,7 +37,8 @@ class PlaybackHandle(
     private val wakeLock: WakeLockGateway,
     private val useComposition: Boolean,
     private val probe: LatencyProbe = LatencyProbe.NOOP,
-    private val onMetric: (String) -> Unit = {},
+    private val metrics: MetricsCollector? = null,
+    private val onLog: (String) -> Unit = {},
 ) {
     /** 状态机。动作由本类注入（[actions]）。 */
     lateinit var fsm: PlaybackFsm
@@ -84,7 +86,10 @@ class PlaybackHandle(
                 "clearKeepAlive" -> { keepAliveTimer?.cancel(); keepAliveTimer = null }
                 "suspend" -> { stopMotor(); cancelEndTimer() }
                 "stop" -> { stopMotor(); cancelAllTimers(); startGraceTimer() }
-                "report" -> onMetric("fail:${resolved.semanticId}")
+                "report" -> {
+                    metrics?.onFail()
+                    onLog("FAIL ${resolved.semanticId}")
+                }
                 "release" -> release()
                 "none" -> Unit
                 else -> error("未知动作：$action —— PlaybackActions 与迁移表脱节了")
@@ -123,7 +128,7 @@ class PlaybackHandle(
         } catch (e: Throwable) {
             // 「API 绝不抛异常」的物理保证：一切平台调用 try/catch 全包。
             // 但失败必须【可观测】—— 走 FAIL 事件 + 指标，不是静默吞掉（性能 §四.1）。
-            onMetric("submitFail:${e::class.simpleName}")
+            onLog("submitFail ${resolved.semanticId} ← ${e::class.simpleName}")
             fsm.send("FAIL")
         }
     }

@@ -50,6 +50,8 @@ class TuningActivity : Activity() {
     private lateinit var latencyView: TextView
     private val logLines = ArrayDeque<String>()
     private var loopToken: CipherHapticCancelToken? = null
+    private lateinit var stress: StressHarness
+    private lateinit var metricsView: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -65,6 +67,7 @@ class TuningActivity : Activity() {
         haptic.registerMuteObserver(object : MuteStateObserver {
             override fun onMuteStateChanged(state: MuteState) = log("mute: $state")
         })
+        stress = StressHarness(haptic) { log(it) }
         setContentView(buildUi())
         refreshStatus()
     }
@@ -157,7 +160,30 @@ class TuningActivity : Activity() {
         root.addView(button("刷新延迟统计") { refreshStatus() })
         root.addView(button("清空样本") { stats.reset(); refreshStatus() })
 
-        root.addView(header("⑧ 日志"))
+        root.addView(header("⑧ 压测与不变式（monkey 补不上的那只眼睛）"))
+        root.addView(TextView(this).apply {
+            text = "monkey 只能发现【硬失败】（崩溃 / ANR）。本库设计成零崩溃、静默降级，" +
+                "于是绝大多数失败是【软失败】——不振动或振错，monkey 完全看不见。" +
+                "下面两条按钮补的正是判定依据：压测后断言「活跃 handle 归零」" +
+                "「无泄漏嫌疑」「无法解释的失败为 0」。"
+            textSize = 11f
+            setTextColor(Color.parseColor("#8A6D3B"))
+        })
+        root.addView(button("压测 200 次随机操作 → 静息 3s → 断言") {
+            stress.runRound(200, 3_000) { refreshStatus() }
+        })
+        root.addView(button("压测 2000 次（抢占风暴）→ 静息 5s → 断言") {
+            stress.runRound(2_000, 5_000) { refreshStatus() }
+        })
+        metricsView = TextView(this).apply {
+            typeface = android.graphics.Typeface.MONOSPACE
+            textSize = 11f
+            setBackgroundColor(Color.parseColor("#F7F7F7"))
+            setPadding(dp(10), dp(10), dp(10), dp(10))
+        }
+        root.addView(metricsView)
+
+        root.addView(header("⑨ 日志"))
         logView = TextView(this).apply {
             typeface = android.graphics.Typeface.MONOSPACE
             textSize = 10f
@@ -210,6 +236,7 @@ class TuningActivity : Activity() {
             append("后台播放             ${c.supportsBackgroundPlayback}   ← P-06：待 V1 真机验证")
         }
         latencyView.text = stats.report()
+        if (::metricsView.isInitialized) metricsView.text = haptic.metricsSnapshot().summary()
     }
 
     private fun log(line: String) {
