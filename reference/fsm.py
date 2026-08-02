@@ -43,6 +43,7 @@ class Resources:
     模拟 PlaybackActions 持有的资源。fuzz 的断言全部打在这上面——
     「绝不泄漏」依赖的是状态机的可达性完备，不是 finally 本身（性能 §四.3）。
     """
+    latest_buffered: bool = False       # v4.3：平台就绪前缓存的最新参数
     player_held: bool = False
     wakelock_held: bool = False
     end_timer: bool = False
@@ -104,6 +105,10 @@ class PlaybackFSM:
             r.end_timer = True
         elif action == "startIdleTimer":
             r.idle_timer = True
+        elif action == "bufferParams":
+            # v4.3：只更新 trailing coalesce 的 latest。不碰平台、不动 idle-timer
+            # （此时 idle-timer 还没建）。submit 起播时必须取它,而非 IR 默认值。见 §4.6
+            r.latest_buffered = True
         elif action == "applyParams":
             r.idle_timer = True             # 重置 = 仍持有
         elif action == "startKeepAlive":

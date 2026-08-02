@@ -34,6 +34,7 @@ class FsmInvariantTest {
         var keepAlive = false
         var released = 0
         var continuous = false
+        var latestBuffered = false          // v4.3：平台就绪前缓存的最新参数
 
         fun anyHeld() = player || wakelock || endTimer || idleTimer || keepAlive
 
@@ -44,6 +45,8 @@ class FsmInvariantTest {
                 }
                 "startEndTimer" -> endTimer = true
                 "startIdleTimer" -> idleTimer = true
+                // v4.3：只更新 trailing coalesce 的 latest，不碰平台、不动 idle-timer
+                "bufferParams" -> latestBuffered = true
                 "applyParams" -> idleTimer = true      // 重置 = 仍持有
                 "startKeepAlive" -> keepAlive = true
                 "clearKeepAlive" -> keepAlive = false

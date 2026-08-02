@@ -892,6 +892,139 @@
       },
       {
         "action": "none",
+        "event": "RESUME",
+        "from": "Pending",
+        "silent": true,
+        "to": "Pending"
+      },
+      {
+        "action": "none",
+        "event": "SUSPEND",
+        "from": "Paused",
+        "silent": true,
+        "to": "Paused"
+      },
+      {
+        "action": "none",
+        "event": "NATURAL_END",
+        "from": "Submitting",
+        "silent": true,
+        "to": "Submitting"
+      },
+      {
+        "action": "bufferParams",
+        "event": "UPDATE",
+        "from": "Pending",
+        "to": "Pending",
+        "when": "kind=continuous"
+      },
+      {
+        "action": "bufferParams",
+        "event": "UPDATE",
+        "from": "Submitting",
+        "to": "Submitting",
+        "when": "kind=continuous"
+      },
+      {
+        "action": "none",
+        "event": "UPDATE",
+        "from": "Pending",
+        "illegal": true,
+        "to": "Pending",
+        "when": "kind!=continuous"
+      },
+      {
+        "action": "none",
+        "event": "UPDATE",
+        "from": "Submitting",
+        "illegal": true,
+        "to": "Submitting",
+        "when": "kind!=continuous"
+      },
+      {
+        "action": "none",
+        "event": [
+          "SUBMIT_OK",
+          "NATURAL_END",
+          "FAIL",
+          "GRACE_EXPIRED",
+          "EXPIRE"
+        ],
+        "from": "Pending",
+        "illegal": true,
+        "to": "Pending"
+      },
+      {
+        "action": "none",
+        "event": [
+          "SUBMIT",
+          "GRACE_EXPIRED",
+          "EXPIRE"
+        ],
+        "from": "Submitting",
+        "illegal": true,
+        "to": "Submitting"
+      },
+      {
+        "action": "none",
+        "event": [
+          "SUBMIT",
+          "SUBMIT_OK",
+          "GRACE_EXPIRED",
+          "EXPIRE"
+        ],
+        "from": "Active",
+        "illegal": true,
+        "to": "Active"
+      },
+      {
+        "action": "none",
+        "event": [
+          "SUBMIT",
+          "SUBMIT_OK",
+          "UPDATE",
+          "GRACE_EXPIRED",
+          "EXPIRE"
+        ],
+        "from": "Paused",
+        "illegal": true,
+        "to": "Paused"
+      },
+      {
+        "action": "none",
+        "event": [
+          "SUBMIT",
+          "SUBMIT_OK",
+          "EXPIRE"
+        ],
+        "from": "Completed",
+        "illegal": true,
+        "to": "Completed"
+      },
+      {
+        "action": "none",
+        "event": [
+          "SUBMIT",
+          "SUBMIT_OK",
+          "EXPIRE"
+        ],
+        "from": "Cancelled",
+        "illegal": true,
+        "to": "Cancelled"
+      },
+      {
+        "action": "none",
+        "event": [
+          "SUBMIT",
+          "SUBMIT_OK",
+          "GRACE_EXPIRED"
+        ],
+        "from": "Failed",
+        "illegal": true,
+        "to": "Failed"
+      },
+      {
+        "action": "none",
         "event": [
           "CANCEL",
           "NATURAL_END",

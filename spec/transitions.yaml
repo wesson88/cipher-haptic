@@ -96,6 +96,49 @@ transitions:
   - { from: Cancelled, event: GRACE_EXPIRED, to: Reclaimed, action: release }
   - { from: Failed,    event: EXPIRE,        to: Reclaimed, action: release }  # 不 grace,立即回收
 
+  # ── v4.3：补齐全部 (状态,事件) 覆盖 —— 由 CI 不变式 4b 机械列出 31 对缺席后逐对判定 ──
+  #
+  #  判定不是"一律 illegal"。31 对里有 5 对是【真行为】,其中 2 对藏着实缺陷：
+  #
+  #  ① 广播吸收：SUSPEND / RESUME 是发给【所有】handle 的生命周期事件,绝大多数 handle
+  #     并不在与之配对的状态。对它们告警是噪音（与 §4.4 修掉的 grace 窗口噪音同类）。
+  - { from: Pending,    event: RESUME,      to: Pending,    action: none, silent: true }
+    # 后台期间新建的 handle 处于 Pending 时会收到 RESUME —— 它从没收到过 SUSPEND。
+  - { from: Paused,     event: SUSPEND,     to: Paused,     action: none, silent: true }
+    # 重复广播 / 多次进后台,幂等。
+  #
+  #  ② 在途定时器吸收：与 `Paused + NATURAL_END` 同一条理由 —— 取消动作与已在途的回调
+  #     之间存在窗口。looping 经 Active→Submitting 重激活时,旧 end-timer 的回调可能迟到。
+  - { from: Submitting, event: NATURAL_END, to: Submitting, action: none, silent: true }
+  #
+  #  ③ ★ 真缺陷：连续通道在【平台就绪之前】的参数更新会被丢掉 ★
+  #     begin() → Pending → SUBMIT → Submitting → SUBMIT_OK → Active,这中间手指可能已经
+  #     动了好几次。v4.2 之前这些 UPDATE 全部命中 0 条 = 忽略 = 最新参数丢失,
+  #     起播时用的是 IR 里的 continuous.initialIntensity 默认值,而不是手指当前位置。
+  #     表现为"按下去拖了一段才起震,而且第一下强度不对"。
+  - { from: Pending,    event: UPDATE, to: Pending,    action: bufferParams, when: "kind=continuous" }
+  - { from: Submitting, event: UPDATE, to: Submitting, action: bufferParams, when: "kind=continuous" }
+    # bufferParams 只更新 trailing coalesce 的 latest,不碰平台、不动 idle-timer（还没建）。
+    # submit 动作起播时【必须取 latest 而非 IR 默认值】—— 见 §七.5 与 PlaybackActions。
+  - { from: Pending,    event: UPDATE, to: Pending,    action: none, when: "kind!=continuous", illegal: true }
+  - { from: Submitting, event: UPDATE, to: Submitting, action: none, when: "kind!=continuous", illegal: true }
+  #
+  #  ④ 其余 26 对：真·故意非法,显式声明。行为与"表里没有"相同（保持当前态 + 告警）,
+  #     但登记过 —— 让不变式 4 能区分【故意非法】与【忘了写】。沉默的缺席不可审计。
+  #     · SUBMIT 是管线发起的一次性命令,只对 Pending 有意义；他处收到 = 重复提交
+  #     · SUBMIT_OK 是平台回调结果,只对 Submitting 有意义；他处收到 = 回调错乱
+  #     · GRACE_EXPIRED / EXPIRE 的定时器只在进入终态时启动,非终态收不到；
+  #       且 Completed/Cancelled 走 GRACE_EXPIRED、Failed 走 EXPIRE,不得交叉
+  - { from: Pending,    event: [SUBMIT_OK, NATURAL_END, FAIL, GRACE_EXPIRED, EXPIRE], to: Pending,    action: none, illegal: true }
+  - { from: Submitting, event: [SUBMIT, GRACE_EXPIRED, EXPIRE],                       to: Submitting, action: none, illegal: true }
+  - { from: Active,     event: [SUBMIT, SUBMIT_OK, GRACE_EXPIRED, EXPIRE],            to: Active,     action: none, illegal: true }
+  - { from: Paused,     event: [SUBMIT, SUBMIT_OK, UPDATE, GRACE_EXPIRED, EXPIRE],    to: Paused,     action: none, illegal: true }
+    # Paused + UPDATE 无需按 kind 拆：continuous 在 v4.2 起 SUSPEND 直接 → Cancelled,
+    # 永远不会进 Paused,故此处对三种 kind 一律非法。
+  - { from: Completed,  event: [SUBMIT, SUBMIT_OK, EXPIRE],                           to: Completed,  action: none, illegal: true }
+  - { from: Cancelled,  event: [SUBMIT, SUBMIT_OK, EXPIRE],                           to: Cancelled,  action: none, illegal: true }
+  - { from: Failed,     event: [SUBMIT, SUBMIT_OK, GRACE_EXPIRED],                    to: Failed,     action: none, illegal: true }
+
   # ── 终态吸收（v3 修订：grace 窗口内任何"迟到"事件都不告警）──
   #   迟到事件 = CANCEL / NATURAL_END / SUSPEND / RESUME / FAIL
   #   （如 critical 后台保活到期→Cancelled→回前台发 RESUME；grace 内 stopAll；在途定时器）
