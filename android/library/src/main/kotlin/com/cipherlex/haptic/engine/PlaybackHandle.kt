@@ -3,6 +3,7 @@ package com.cipherlex.haptic.engine
 import com.cipherlex.haptic.core.AndroidTranslator
 import com.cipherlex.haptic.core.ContinuousCoalescer
 import com.cipherlex.haptic.core.HapticScheduler
+import com.cipherlex.haptic.core.LatencyProbe
 import com.cipherlex.haptic.core.PlaybackActions
 import com.cipherlex.haptic.core.PlaybackFsm
 import com.cipherlex.haptic.core.ResolvedWaveform
@@ -34,6 +35,7 @@ class PlaybackHandle(
     private val gateway: VibratorGateway,
     private val wakeLock: WakeLockGateway,
     private val useComposition: Boolean,
+    private val probe: LatencyProbe = LatencyProbe.NOOP,
     private val onMetric: (String) -> Unit = {},
 ) {
     /** 状态机。动作由本类注入（[actions]）。 */
@@ -93,6 +95,7 @@ class PlaybackHandle(
     // ── 平台提交 ────────────────────────────────────────────────────
 
     private fun doSubmit() {
+        val t1 = System.nanoTime()
         try {
             acquireWakeLockIfNeeded()
             if (resolved.kind == WaveKind.CONTINUOUS) {
@@ -113,6 +116,9 @@ class PlaybackHandle(
                     w.repeat,
                 )
             }
+            // T1→T2：平台调用往返。这段是 binder IPC，改不了 —— 但要量出来，
+            // 才知道 T0→T1 在整体里占多少（V5 §6.2b 的决策规则按占比写死）。
+            probe.onSample(LatencyProbe.Segment.PLATFORM_SUBMIT, System.nanoTime() - t1)
             fsm.send("SUBMIT_OK")
         } catch (e: Throwable) {
             // 「API 绝不抛异常」的物理保证：一切平台调用 try/catch 全包。

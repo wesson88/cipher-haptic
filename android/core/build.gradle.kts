@@ -1,6 +1,10 @@
 plugins {
     kotlin("jvm") version "1.9.24"
+    `maven-publish`
 }
+
+group = "com.cipherlex"
+version = "1.0.0"
 
 // ⚠️ 纯 Kotlin/JVM，【不引入任何 Android 依赖】。
 // 这是「双端镜像同构」的公共面：这里的每个类在 Swift 侧都有对应物，
@@ -39,4 +43,29 @@ tasks.named("processResources") { dependsOn(copySpec) }
 tasks.test {
     useJUnitPlatform()
     testLogging { events("passed", "failed", "skipped") }
+}
+
+// core 作为【独立 artifact】发布。
+//
+// ⚠️ AAR 不会内联模块依赖 —— :library 的 AAR 里没有 core 的 class，也没有
+//    runtime.min.json（它在 core 的 resources 里）。这不是缺陷，是 AGP 的正常
+//    行为：模块依赖在发布时变成 POM 里的 <dependency>。故发布单元是【两个】：
+//      com.cipherlex:cipher-haptic-core:1.0.0   (jar, 平台中立)
+//      com.cipherlex:cipher-haptic:1.0.0        (aar, 依赖上面那个)
+//    宿主只需声明后者，Gradle 会把 core 一并拉下来。
+//
+// 这个切分顺带带来一个好处：**纯 JVM 的宿主（如单测夹具、调参工具链）可以只依赖
+// core**，不必背上 Android 依赖。Swift 侧将来镜像同样的边界。
+publishing {
+    publications {
+        create<MavenPublication>("core") {
+            from(components["java"])
+            artifactId = "cipher-haptic-core"
+            pom {
+                name.set("CipherHaptic Core")
+                description.set("平台中立的语义解析、决策管线、降级与 IR")
+            }
+        }
+    }
+    repositories { mavenLocal() }
 }

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- P-18：Android 独有的失败模式。缺权限时库静默降级 + 指标，不崩。 -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- V3 待验证的那道防线（P-10）。若实测无效，这行和 AndroidWakeLock 一起删。 -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <application
+        android:label="CipherHaptic 调音台"
+        android:supportsRtl="true"
+        android:theme="@android:style/Theme.Material.Light">
+        <activity
+            android:name=".TuningActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

@@ -1,13 +1,19 @@
 package com.cipherlex.haptic
 
+import android.content.Context
 import com.cipherlex.haptic.core.Category
 import com.cipherlex.haptic.core.HapticScheduler
+import com.cipherlex.haptic.core.LatencyProbe
 import com.cipherlex.haptic.core.HardwareClass
 import com.cipherlex.haptic.core.PreemptionPolicy
 import com.cipherlex.haptic.core.PlaybackFsm
 import com.cipherlex.haptic.core.SpecLoader
 import com.cipherlex.haptic.core.TransitionTable
 import com.cipherlex.haptic.core.WaveKind
+import com.cipherlex.haptic.engine.AndroidFrameClock
+import com.cipherlex.haptic.engine.AndroidHapticScheduler
+import com.cipherlex.haptic.engine.AndroidVibratorGateway
+import com.cipherlex.haptic.engine.AndroidWakeLock
 import com.cipherlex.haptic.engine.HardwareClassProbe
 import com.cipherlex.haptic.engine.PlaybackHandle
 import com.cipherlex.haptic.engine.VibratorGateway
@@ -104,6 +110,7 @@ class CipherHaptic internal constructor(
     private val frameClock: FrameClock,
     private val capacity: Int = DEFAULT_CAPACITY,
     private val coalesceWindowMs: Long = DEFAULT_COALESCE_WINDOW_MS,
+    private val probe2: LatencyProbe = LatencyProbe.NOOP,
 ) {
     private val table = TransitionTable.from(loader.transitions)
     private val handles = LinkedHashMap<Long, PlaybackHandle>()
@@ -236,6 +243,7 @@ class CipherHaptic internal constructor(
         semantic: CipherHapticSemantic,
         preSubmit: (PlaybackHandle) -> Unit = {},
     ): PlaybackHandle? {
+        val t0 = System.nanoTime()
         // ① master
         if (!masterEnabled.get()) return drop(semantic, "disabled")
         // ② system-off（P-14）  ③ dnd —— critical 绕过
@@ -266,10 +274,14 @@ class CipherHaptic internal constructor(
         PreemptionPolicy.computeTargets(rw.category, snapshot, capacity, coalesceWindowMs)
             .forEach { handles[it]?.fsm?.send("CANCEL") }
 
+        // ── T0→T1 采样：决策管线到此结束（V5 §6.2b）──────────────────
+        // 这一段是【本库唯一能优化的部分】，也是"是否下沉 C++"唯一相关的度量。
+        probe2.onSample(LatencyProbe.Segment.DECISION, System.nanoTime() - t0)
+
         // ⑦ submit —— handle 创建 + 平台提交在同一 critical section 内（§七.3）
         val useComposition = probe.canUseComposition(intArrayOf(PRIMITIVE_CLICK))
         val h = PlaybackHandle(nextId.getAndIncrement(), rw, scheduler, gateway, wakeLock,
-                               useComposition) { debugDelegate?.onStateChanged(it) }
+                               useComposition, probe2) { debugDelegate?.onStateChanged(it) }
         val fsm = PlaybackFsm(table, rw.kind, rw.category, h.actions)
         h.attach(fsm)
         // ⚠️ 回收必须是【推送式】：Reclaimed 由 grace 定时器驱动，而 sweep() 是拉取式的
@@ -280,6 +292,7 @@ class CipherHaptic internal constructor(
         startedAt[h.id] = scheduler.nowMs()
         preSubmit(h)                       // continuous 在此塞入手指当前位置
         h.fsm.send("SUBMIT")
+        probe2.onSample(LatencyProbe.Segment.SOFTWARE_TOTAL, System.nanoTime() - t0)
         sweep()
         return h
     }
@@ -340,6 +353,38 @@ class CipherHaptic internal constructor(
     }
 
     companion object {
+        /**
+         * **生产装配入口。** 业务方唯一需要调用的构造方式。
+         *
+         * 装配的四件平台相关物件都各自可替换（[VibratorGateway] / [WakeLockGateway] /
+         * [FrameClock] / [HapticScheduler]），这是"绝大部分逻辑能在 JVM 单测里跑"
+         * 的前提 —— 也是不引入 Robolectric 的底气。
+         *
+         * @param latencyProbe 延迟埋点。**调音台必须注入**（V5 §6.2b 要求 T0→T1
+         *   单独成段）；生产环境按需，默认不采样。
+         */
+        @JvmStatic
+        @JvmOverloads
+        fun create(
+            context: Context,
+            hardwareClassOverride: HardwareClass? = null,
+            latencyProbe: LatencyProbe = LatencyProbe.NOOP,
+        ): CipherHaptic {
+            val app = context.applicationContext
+            val gateway = AndroidVibratorGateway(app)
+            return CipherHaptic(
+                loader = SpecLoader.fromResources(),
+                scheduler = AndroidHapticScheduler(),
+                gateway = gateway,
+                wakeLock = AndroidWakeLock(app),
+                // hardwareClassOverride 是产出 LINEAR_X_LIMITED 的【唯一】路径（P-07）——
+                // 它诚实地承认"这就是一张白名单"，而不是伪装成运行时探测。
+                probe = HardwareClassProbe(gateway, hardwareClassOverride),
+                frameClock = AndroidFrameClock(),
+                probe2 = latencyProbe,
+            )
+        }
+
         /** `VibrationEffect.Composition.PRIMITIVE_CLICK` 的常量值，避免在 core 引入平台常量。 */
         private const val PRIMITIVE_CLICK = 1
 

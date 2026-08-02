@@ -37,3 +37,4 @@ rootProject.name = "cipher-haptic"
 
 include(":core")
 include(":library")
+include(":demo")        // 调音台（主文档 B.9）—— 不参与库的发布产物
