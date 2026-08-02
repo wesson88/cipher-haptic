@@ -1,3 +1,10 @@
+# Python
 __pycache__/
 *.pyc
 .venv/
+
+# Gradle / Kotlin 构建产物
+.gradle/
+build/
+**/build/
+local.properties
