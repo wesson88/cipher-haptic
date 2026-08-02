@@ -5,6 +5,14 @@
     <uses-permission android:name="android.permission.VIBRATE" />
     <!-- V3 待验证的那道防线（P-10）。若实测无效，这行和 AndroidWakeLock 一起删。 -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- V3：前台服务是 ROM 一般不冻的那一类；AlarmManager 精确闹钟穿透 Doze。
+         ⚠️ 这是【测试夹具】的需要，不是库的推荐用法 —— 见主文档 A.1b：
+         后台告警应走 NotificationChannel 让系统代振，而不是自己搭前台服务。 -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
 
     <application
         android:label="CipherHaptic 调音台"
@@ -28,5 +36,14 @@
                 <action android:name="com.cipherlex.haptic.demo.V3" />
             </intent-filter>
         </receiver>
+
+        <service
+            android:name=".V3Service"
+            android:exported="true"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="haptic scheduling latency measurement (V3)" />
+        </service>
     </application>
 </manifest>
