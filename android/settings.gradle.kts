@@ -13,8 +13,12 @@
 
 pluginManagement {
     repositories {
+        // AGP 只在 Google 的 Maven 仓，不在 Maven Central —— 缺 google() 时
+        // com.android.library 的 marker 解析不到，报错文案却只提 "plugin not found"
+        maven("https://maven.aliyun.com/repository/google")
         maven("https://maven.aliyun.com/repository/gradle-plugin")
         maven("https://maven.aliyun.com/repository/public")
+        google()
         gradlePluginPortal()
         mavenCentral()
     }
@@ -22,7 +26,9 @@ pluginManagement {
 
 dependencyResolutionManagement {
     repositories {
+        maven("https://maven.aliyun.com/repository/google")
         maven("https://maven.aliyun.com/repository/public")
+        google()
         mavenCentral()
     }
 }
@@ -30,4 +36,4 @@ dependencyResolutionManagement {
 rootProject.name = "cipher-haptic"
 
 include(":core")
-// include(":library")   // 需 Android SDK + AGP，待 core 单测绿后接
+include(":library")
