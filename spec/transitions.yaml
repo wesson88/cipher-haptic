@@ -34,6 +34,18 @@ transitions:
   - { from: Submitting, event: FAIL,      to: Failed,     action: report }
   - { from: Submitting, event: CANCEL,    to: Cancelled,  action: stop }    # 可能已下发,stop 兜底
 
+  # ── v4.2：Submitting 也要处理前后台（与 Active 的三行完全对称）──────────
+  #   可达场景：scheduler 已提交、平台调用在途（makePlayer+start / binder IPC）时 App 切后台。
+  #   窗口小但真实。v4 未建模 → 非 critical 的 handle 会径直走到 Active【在后台播出去】,
+  #   违反 B.6「除 critical 外所有振动立即停止」。
+  #   `Pending + SUSPEND → Cancelled` 之所以存在,正是文档在乎早一个状态的同一场景 —— 漏了这一环。
+  #   ——由 FSM fuzz 随机序列 ['SUBMIT','SUSPEND'] 查出（静态穷举查不到：它只看部分覆盖的格）。
+  - { from: Submitting, event: SUSPEND, to: Cancelled,  action: stop, when: "kind=continuous" }
+  - { from: Submitting, event: SUSPEND, to: Cancelled,  action: stop, when: "kind!=continuous && cat!=critical" }
+  - { from: Submitting, event: SUSPEND, to: Submitting, action: startKeepAlive, when: "kind!=continuous && cat=critical" }
+  - { from: Submitting, event: RESUME,  to: Submitting, action: clearKeepAlive, when: "cat=critical" }
+  - { from: Submitting, event: RESUME,  to: Submitting, action: none, when: "cat!=critical", silent: true }
+
   # ── 自然结束（按 kind 分流）──────────────────────────────────────────────
   - { from: Active, event: NATURAL_END, to: Completed,  action: none,     when: "kind=oneshot" }
   - { from: Active, event: NATURAL_END, to: Submitting, action: resubmit, when: "kind=looping" }

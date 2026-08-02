@@ -25,6 +25,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from reference.degrade import KNOWN_ACTIONS, DegradeError, SILENT, degrade   # noqa: E402
+from reference.fsm import fuzz                                                # noqa: E402
 from reference.loader import Spec, SpecError                                  # noqa: E402
 from reference.translate import (                                            # noqa: E402
     composition_pulse_starts, to_android_composition, to_android_waveform,
@@ -341,6 +342,8 @@ def _guard_ok(when: str | None, kind: str, cat: str) -> bool:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("-v", "--verbose", action="store_true")
+    ap.add_argument("--fuzz", type=int, default=50_000,
+                    help="FSM 不变式 fuzz 轮数（0 = 跳过）")
     args = ap.parse_args()
 
     try:
@@ -366,6 +369,9 @@ def main() -> int:
     r.add("14", "continuous 块一致性", rule_14(s))
     for name, fails in invariants(s).items():
         r.add("FSM", name, fails)
+    if args.fuzz:
+        r.add("FUZZ", f"随机事件序列 × {args.fuzz:,}（资源不泄漏 / 终态吸收）",
+              fuzz(s.transitions, rounds=args.fuzz))
 
     print("=" * 72)
     for rid, name, fails in r.rules:
