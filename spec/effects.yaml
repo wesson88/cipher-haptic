@@ -80,7 +80,7 @@ effects:
       min_api: 29
       waveform:                                                                # t= 0 / 120 ✓
         timings_ms: [25, 95, 25]
-        amplitudes: [178, 0, 128]            # 0.70/0.50 × 255
+        amplitudes: [179, 0, 128]            # roundHalfUp(0.70/0.50 × 255)；178.5→179, 127.5→128
 
   default_ui_click:                 # 普通 UI 点击：单次轻微 transient
     category: ux

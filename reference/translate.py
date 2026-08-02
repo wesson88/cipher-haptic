@@ -11,7 +11,7 @@
 
 from __future__ import annotations
 
-from .model import IREvent
+from .model import IREvent, round_half_up
 
 
 def to_ios_events(events: list[IREvent]) -> list[dict]:
@@ -51,7 +51,7 @@ def to_android_waveform(events: list[IREvent], looping: bool = False) -> dict:
                 f"IR 不允许，应在 validate() 阶段就被拦下"
             )
         timings.append(e.durationMs)
-        amps.append(round(e.intensity * 255))     # P-13：量化误差 < 1/255
+        amps.append(round_half_up(e.intensity * 255))   # P-13；半数进一,见 SSOT §1.1
         cursor = e.atMs + e.durationMs
     return {"timings_ms": timings, "amplitudes": amps,
             "repeat": 0 if looping else -1}

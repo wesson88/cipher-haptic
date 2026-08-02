@@ -16,6 +16,7 @@
 
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
 from typing import Literal, Optional
 
@@ -27,6 +28,18 @@ HardwareClass = Literal["ERM_Z", "LINEAR_X_LIMITED", "LINEAR_X_FULL"]
 
 def clamp01(x: float) -> float:
     return 0.0 if x < 0.0 else (1.0 if x > 1.0 else x)
+
+
+def round_half_up(x: float) -> int:
+    """
+    半数进一取整。**不能用 Python 内置 round()** —— 它是银行家舍入（半数取偶），
+    与 Kotlin `Math.round` / Swift `rounded()` 不一致。
+
+    实证：0.60 × 0.5 × 255 = 76.5 → 内置 round 得 76，两端原生得 77。
+    这类"看似无歧义的词在不同语言里语义不同"的缺陷，只有真跑起来对拍才会暴露。
+    见 SSOT §1.1。
+    """
+    return math.floor(x + 0.5)
 
 
 @dataclass(frozen=True)
@@ -45,8 +58,8 @@ class IREvent:
     def scaled(self, *, amp: float = 1.0, dur: float = 1.0,
                sharpness: Optional[float] = None) -> "IREvent":
         return IREvent(
-            atMs=round(self.atMs * dur),
-            durationMs=max(1, round(self.durationMs * dur)),
+            atMs=round_half_up(self.atMs * dur),
+            durationMs=max(1, round_half_up(self.durationMs * dur)),
             intensity=clamp01(self.intensity * amp),
             sharpness=self.sharpness if sharpness is None else sharpness,
             kind=self.kind,

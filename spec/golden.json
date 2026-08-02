@@ -1,0 +1,2500 @@
+{
+  "_generated": "由 tools/golden.py 从 reference/ 参考实现产出，禁止手改",
+  "_note": "双端原生实现跑同一组输入，逐字段 diff；不符即构建失败",
+  "cases": [
+    {
+      "drop": "degraded-to-silent",
+      "globalScale": 1.0,
+      "hardwareClass": "ERM_Z",
+      "semantic": "control.tap"
+    },
+    {
+      "drop": "degraded-to-silent",
+      "globalScale": 0.5,
+      "hardwareClass": "ERM_Z",
+      "semantic": "control.tap"
+    },
+    {
+      "androidComposition": {
+        "primitives": [
+          {
+            "delay_ms": 0,
+            "scale": 0.5,
+            "type": "PRIMITIVE_CLICK"
+          }
+        ]
+      },
+      "androidWaveform": {
+        "amplitudes": [
+          128
+        ],
+        "repeat": -1,
+        "timings_ms": [
+          15
+        ]
+      },
+      "globalScale": 1.0,
+      "hardwareClass": "LINEAR_X_LIMITED",
+      "ios": [
+        {
+          "eventType": "hapticTransient",
+          "intensity": 0.5,
+          "relativeTime": 0.0,
+          "sharpness": 0.5
+        }
+      ],
+      "ir": {
+        "category": "ux",
+        "degradeTrace": [
+          "full"
+        ],
+        "effectId": "default_ui_click",
+        "events": [
+          {
+            "atMs": 0,
+            "durationMs": 15,
+            "intensity": 0.5,
+            "kind": "pulse",
+            "sharpness": 0.5
+          }
+        ],
+        "kind": "oneshot",
+        "loopGapMs": 0,
+        "protected": false,
+        "semanticId": "control.tap",
+        "totalDurationMs": 15
+      },
+      "semantic": "control.tap"
+    },
+    {
+      "androidComposition": {
+        "primitives": [
+          {
+            "delay_ms": 0,
+            "scale": 0.25,
+            "type": "PRIMITIVE_CLICK"
+          }
+        ]
+      },
+      "androidWaveform": {
+        "amplitudes": [
+          64
+        ],
+        "repeat": -1,
+        "timings_ms": [
+          15
+        ]
+      },
+      "globalScale": 0.5,
+      "hardwareClass": "LINEAR_X_LIMITED",
+      "ios": [
+        {
+          "eventType": "hapticTransient",
+          "intensity": 0.25,
+          "relativeTime": 0.0,
+          "sharpness": 0.5
+        }
+      ],
+      "ir": {
+        "category": "ux",
+        "degradeTrace": [
+          "full"
+        ],
+        "effectId": "default_ui_click",
+        "events": [
+          {
+            "atMs": 0,
+            "durationMs": 15,
+            "intensity": 0.25,
+            "kind": "pulse",
+            "sharpness": 0.5
+          }
+        ],
+        "kind": "oneshot",
+        "loopGapMs": 0,
+        "protected": false,
+        "semanticId": "control.tap",
+        "totalDurationMs": 15
+      },
+      "semantic": "control.tap"
+    },
+    {
+      "androidComposition": {
+        "primitives": [
+          {
+            "delay_ms": 0,
+            "scale": 0.5,
+            "type": "PRIMITIVE_CLICK"
+          }
+        ]
+      },
+      "androidWaveform": {
+        "amplitudes": [
+          128
+        ],
+        "repeat": -1,
+        "timings_ms": [
+          15
+        ]
+      },
+      "globalScale": 1.0,
+      "hardwareClass": "LINEAR_X_FULL",
+      "ios": [
+        {
+          "eventType": "hapticTransient",
+          "intensity": 0.5,
+          "relativeTime": 0.0,
+          "sharpness": 0.5
+        }
+      ],
+      "ir": {
+        "category": "ux",
+        "degradeTrace": [
+          "full"
+        ],
+        "effectId": "default_ui_click",
+        "events": [
+          {
+            "atMs": 0,
+            "durationMs": 15,
+            "intensity": 0.5,
+            "kind": "pulse",
+            "sharpness": 0.5
+          }
+        ],
+        "kind": "oneshot",
+        "loopGapMs": 0,
+        "protected": false,
+        "semanticId": "control.tap",
+        "totalDurationMs": 15
+      },
+      "semantic": "control.tap"
+    },
+    {
+      "androidComposition": {
+        "primitives": [
+          {
+            "delay_ms": 0,
+            "scale": 0.25,
+            "type": "PRIMITIVE_CLICK"
+          }
+        ]
+      },
+      "androidWaveform": {
+        "amplitudes": [
+          64
+        ],
+        "repeat": -1,
+        "timings_ms": [
+          15
+        ]
+      },
+      "globalScale": 0.5,
+      "hardwareClass": "LINEAR_X_FULL",
+      "ios": [
+        {
+          "eventType": "hapticTransient",
+          "intensity": 0.25,
+          "relativeTime": 0.0,
+          "sharpness": 0.5
+        }
+      ],
+      "ir": {
+        "category": "ux",
+        "degradeTrace": [
+          "full"
+        ],
+        "effectId": "default_ui_click",
+        "events": [
+          {
+            "atMs": 0,
+            "durationMs": 15,
+            "intensity": 0.25,
+            "kind": "pulse",
+            "sharpness": 0.5
+          }
+        ],
+        "kind": "oneshot",
+        "loopGapMs": 0,
+        "protected": false,
+        "semanticId": "control.tap",
+        "totalDurationMs": 15
+      },
+      "semantic": "control.tap"
+    },
+    {
+      "drop": "degraded-to-silent",
+      "globalScale": 1.0,
+      "hardwareClass": "ERM_Z",
+      "semantic": "gesture.track"
+    },
+    {
+      "drop": "degraded-to-silent",
+      "globalScale": 0.5,
+      "hardwareClass": "ERM_Z",
+      "semantic": "gesture.track"
+    },
+    {
+      "androidWaveform": {
+        "amplitudes": [
+          128
+        ],
+        "repeat": -1,
+        "timings_ms": [
+          30000
+        ]
+      },
+      "globalScale": 1.0,
+      "hardwareClass": "LINEAR_X_LIMITED",
+      "ios": [
+        {
+          "duration": 30.0,
+          "eventType": "hapticContinuous",
+          "intensity": 0.5,
+          "relativeTime": 0.0,
+          "sharpness": 0.0
+        }
+      ],
+      "ir": {
+        "category": "ux",
+        "continuous": {
+          "idleTimeoutMs": 1500,
+          "initialIntensity": 0.5,
+          "initialSharpness": 0.5,
+          "maxDurationMs": 30000,
+          "segmentMs": 120
+        },
+        "degradeTrace": [
+          "amplitude_only"
+        ],
+        "effectId": "gesture_continuous",
+        "events": [
+          {
+            "atMs": 0,
+            "durationMs": 30000,
+            "intensity": 0.5,
+            "kind": "sustain",
+            "sharpness": 0.0
+          }
+        ],
+        "kind": "continuous",
+        "loopGapMs": 0,
+        "protected": true,
+        "semanticId": "gesture.track",
+        "totalDurationMs": 0
+      },
+      "semantic": "gesture.track"
+    },
+    {
+      "androidWaveform": {
+        "amplitudes": [
+          64
+        ],
+        "repeat": -1,
+        "timings_ms": [
+          30000
+        ]
+      },
+      "globalScale": 0.5,
+      "hardwareClass": "LINEAR_X_LIMITED",
+      "ios": [
+        {
+          "duration": 30.0,
+          "eventType": "hapticContinuous",
+          "intensity": 0.25,
+          "relativeTime": 0.0,
+          "sharpness": 0.0
+        }
+      ],
+      "ir": {
+        "category": "ux",
+        "continuous": {
+          "idleTimeoutMs": 1500,
+          "initialIntensity": 0.5,
+          "initialSharpness": 0.5,
+          "maxDurationMs": 30000,
+          "segmentMs": 120
+        },
+        "degradeTrace": [
+          "amplitude_only"
+        ],
+        "effectId": "gesture_continuous",
+        "events": [
+          {
+            "atMs": 0,
+            "durationMs": 30000,
+            "intensity": 0.25,
+            "kind": "sustain",
+            "sharpness": 0.0
+          }
+        ],
+        "kind": "continuous",
+        "loopGapMs": 0,
+        "protected": true,
+        "semanticId": "gesture.track",
+        "totalDurationMs": 0
+      },
+      "semantic": "gesture.track"
+    },
+    {
+      "androidWaveform": {
+        "amplitudes": [
+          128
+        ],
+        "repeat": -1,
+        "timings_ms": [
+          30000
+        ]
+      },
+      "globalScale": 1.0,
+      "hardwareClass": "LINEAR_X_FULL",
+      "ios": [
+        {
+          "duration": 30.0,
+          "eventType": "hapticContinuous",
+          "intensity": 0.5,
+          "relativeTime": 0.0,
+          "sharpness": 0.5
+        }
+      ],
+      "ir": {
+        "category": "ux",
+        "continuous": {
+          "idleTimeoutMs": 1500,
+          "initialIntensity": 0.5,
+          "initialSharpness": 0.5,
+          "maxDurationMs": 30000,
+          "segmentMs": 120
+        },
+        "degradeTrace": [
+          "full"
+        ],
+        "effectId": "gesture_continuous",
+        "events": [
+          {
+            "atMs": 0,
+            "durationMs": 30000,
+            "intensity": 0.5,
+            "kind": "sustain",
+            "sharpness": 0.5
+          }
+        ],
+        "kind": "continuous",
+        "loopGapMs": 0,
+        "protected": true,
+        "semanticId": "gesture.track",
+        "totalDurationMs": 0
+      },
+      "semantic": "gesture.track"
+    },
+    {
+      "androidWaveform": {
+        "amplitudes": [
+          64
+        ],
+        "repeat": -1,
+        "timings_ms": [
+          30000
+        ]
+      },
+      "globalScale": 0.5,
+      "hardwareClass": "LINEAR_X_FULL",
+      "ios": [
+        {
+          "duration": 30.0,
+          "eventType": "hapticContinuous",
+          "intensity": 0.25,
+          "relativeTime": 0.0,
+          "sharpness": 0.5
+        }
+      ],
+      "ir": {
+        "category": "ux",
+        "continuous": {
+          "idleTimeoutMs": 1500,
+          "initialIntensity": 0.5,
+          "initialSharpness": 0.5,
+          "maxDurationMs": 30000,
+          "segmentMs": 120
+        },
+        "degradeTrace": [
+          "full"
+        ],
+        "effectId": "gesture_continuous",
+        "events": [
+          {
+            "atMs": 0,
+            "durationMs": 30000,
+            "intensity": 0.25,
+            "kind": "sustain",
+            "sharpness": 0.5
+          }
+        ],
+        "kind": "continuous",
+        "loopGapMs": 0,
+        "protected": true,
+        "semanticId": "gesture.track",
+        "totalDurationMs": 0
+      },
+      "semantic": "gesture.track"
+    },
+    {
+      "androidComposition": {
+        "primitives": [
+          {
+            "delay_ms": 0,
+            "scale": 1.0,
+            "type": "PRIMITIVE_CLICK"
+          }
+        ]
+      },
+      "androidWaveform": {
+        "amplitudes": [
+          255
+        ],
+        "repeat": -1,
+        "timings_ms": [
+          60
+        ]
+      },
+      "globalScale": 1.0,
+      "hardwareClass": "ERM_Z",
+      "ios": [
+        {
+          "eventType": "hapticTransient",
+          "intensity": 1.0,
+          "relativeTime": 0.0,
+          "sharpness": 0.0
+        }
+      ],
+      "ir": {
+        "category": "ux",
+        "degradeTrace": [
+          "forced_amplitude"
+        ],
+        "effectId": "ticket_rip",
+        "events": [
+          {
+            "atMs": 0,
+            "durationMs": 60,
+            "intensity": 1.0,
+            "kind": "pulse",
+            "sharpness": 0.0
+          }
+        ],
+        "kind": "oneshot",
+        "loopGapMs": 0,
+        "protected": false,
+        "semanticId": "item.detach",
+        "totalDurationMs": 60
+      },
+      "semantic": "item.detach"
+    },
+    {
+      "androidComposition": {
+        "primitives": [
+          {
+            "delay_ms": 0,
+            "scale": 1.0,
+            "type": "PRIMITIVE_CLICK"
+          }
+        ]
+      },
+      "androidWaveform": {
+        "amplitudes": [
+          255
+        ],
+        "repeat": -1,
+        "timings_ms": [
+          60
+        ]
+      },
+      "globalScale": 0.5,
+      "hardwareClass": "ERM_Z",
+      "ios": [
+        {
+          "eventType": "hapticTransient",
+          "intensity": 1.0,
+          "relativeTime": 0.0,
+          "sharpness": 0.0
+        }
+      ],
+      "ir": {
+        "category": "ux",
+        "degradeTrace": [
+          "forced_amplitude"
+        ],
+        "effectId": "ticket_rip",
+        "events": [
+          {
+            "atMs": 0,
+            "durationMs": 60,
+            "intensity": 1.0,
+            "kind": "pulse",
+            "sharpness": 0.0
+          }
+        ],
+        "kind": "oneshot",
+        "loopGapMs": 0,
+        "protected": false,
+        "semanticId": "item.detach",
+        "totalDurationMs": 60
+      },
+      "semantic": "item.detach"
+    },
+    {
+      "androidComposition": {
+        "primitives": [
+          {
+            "delay_ms": 0,
+            "scale": 1.0,
+            "type": "PRIMITIVE_CLICK"
+          }
+        ]
+      },
+      "androidWaveform": {
+        "amplitudes": [
+          255
+        ],
+        "repeat": -1,
+        "timings_ms": [
+          30
+        ]
+      },
+      "globalScale": 1.0,
+      "hardwareClass": "LINEAR_X_LIMITED",
+      "ios": [
+        {
+          "eventType": "hapticTransient",
+          "intensity": 1.0,
+          "relativeTime": 0.0,
+          "sharpness": 0.9
+        }
+      ],
+      "ir": {
+        "category": "ux",
+        "degradeTrace": [
+          "tail_pulse_only"
+        ],
+        "effectId": "ticket_rip",
+        "events": [
+          {
+            "atMs": 0,
+            "durationMs": 30,
+            "intensity": 1.0,
+            "kind": "pulse",
+            "sharpness": 0.9
+          }
+        ],
+        "kind": "oneshot",
+        "loopGapMs": 0,
+        "protected": false,
+        "semanticId": "item.detach",
+        "totalDurationMs": 30
+      },
+      "semantic": "item.detach"
+    },
+    {
+      "androidComposition": {
+        "primitives": [
+          {
+            "delay_ms": 0,
+            "scale": 0.5,
+            "type": "PRIMITIVE_CLICK"
+          }
+        ]
+      },
+      "androidWaveform": {
+        "amplitudes": [
+          128
+        ],
+        "repeat": -1,
+        "timings_ms": [
+          30
+        ]
+      },
+      "globalScale": 0.5,
+      "hardwareClass": "LINEAR_X_LIMITED",
+      "ios": [
+        {
+          "eventType": "hapticTransient",
+          "intensity": 0.5,
+          "relativeTime": 0.0,
+          "sharpness": 0.9
+        }
+      ],
+      "ir": {
+        "category": "ux",
+        "degradeTrace": [
+          "tail_pulse_only"
+        ],
+        "effectId": "ticket_rip",
+        "events": [
+          {
+            "atMs": 0,
+            "durationMs": 30,
+            "intensity": 0.5,
+            "kind": "pulse",
+            "sharpness": 0.9
+          }
+        ],
+        "kind": "oneshot",
+        "loopGapMs": 0,
+        "protected": false,
+        "semanticId": "item.detach",
+        "totalDurationMs": 30
+      },
+      "semantic": "item.detach"
+    },
+    {
+      "androidWaveform": {
+        "amplitudes": [
+          89,
+          255
+        ],
+        "repeat": -1,
+        "timings_ms": [
+          200,
+          30
+        ]
+      },
+      "globalScale": 1.0,
+      "hardwareClass": "LINEAR_X_FULL",
+      "ios": [
+        {
+          "duration": 0.2,
+          "eventType": "hapticContinuous",
+          "intensity": 0.35,
+          "relativeTime": 0.0,
+          "sharpness": 0.2
+        },
+        {
+          "eventType": "hapticTransient",
+          "intensity": 1.0,
+          "relativeTime": 0.2,
+          "sharpness": 0.9
+        }
+      ],
+      "ir": {
+        "category": "ux",
+        "degradeTrace": [
+          "full"
+        ],
+        "effectId": "ticket_rip",
+        "events": [
+          {
+            "atMs": 0,
+            "durationMs": 200,
+            "intensity": 0.35,
+            "kind": "sustain",
+            "sharpness": 0.2
+          },
+          {
+            "atMs": 200,
+            "durationMs": 30,
+            "intensity": 1.0,
+            "kind": "pulse",
+            "sharpness": 0.9
+          }
+        ],
+        "kind": "oneshot",
+        "loopGapMs": 0,
+        "protected": false,
+        "semanticId": "item.detach",
+        "totalDurationMs": 230
+      },
+      "semantic": "item.detach"
+    },
+    {
+      "androidWaveform": {
+        "amplitudes": [
+          45,
+          128
+        ],
+        "repeat": -1,
+        "timings_ms": [
+          200,
+          30
+        ]
+      },
+      "globalScale": 0.5,
+      "hardwareClass": "LINEAR_X_FULL",
+      "ios": [
+        {
+          "duration": 0.2,
+          "eventType": "hapticContinuous",
+          "intensity": 0.175,
+          "relativeTime": 0.0,
+          "sharpness": 0.2
+        },
+        {
+          "eventType": "hapticTransient",
+          "intensity": 0.5,
+          "relativeTime": 0.2,
+          "sharpness": 0.9
+        }
+      ],
+      "ir": {
+        "category": "ux",
+        "degradeTrace": [
+          "full"
+        ],
+        "effectId": "ticket_rip",
+        "events": [
+          {
+            "atMs": 0,
+            "durationMs": 200,
+            "intensity": 0.175,
+            "kind": "sustain",
+            "sharpness": 0.2
+          },
+          {
+            "atMs": 200,
+            "durationMs": 30,
+            "intensity": 0.5,
+            "kind": "pulse",
+            "sharpness": 0.9
+          }
+        ],
+        "kind": "oneshot",
+        "loopGapMs": 0,
+        "protected": false,
+        "semanticId": "item.detach",
+        "totalDurationMs": 230
+      },
+      "semantic": "item.detach"
+    },
+    {
+      "androidComposition": {
+        "primitives": [
+          {
+            "delay_ms": 0,
+            "scale": 1.0,
+            "type": "PRIMITIVE_CLICK"
+          }
+        ]
+      },
+      "androidWaveform": {
+        "amplitudes": [
+          255
+        ],
+        "repeat": -1,
+        "timings_ms": [
+          40
+        ]
+      },
+      "globalScale": 1.0,
+      "hardwareClass": "ERM_Z",
+      "ios": [
+        {
+          "eventType": "hapticTransient",
+          "intensity": 1.0,
+          "relativeTime": 0.0,
+          "sharpness": 0.0
+        }
+      ],
+      "ir": {
+        "category": "ux",
+        "degradeTrace": [
+          "forced_amplitude"
+        ],
+        "effectId": "glitch_dissolve",
+        "events": [
+          {
+            "atMs": 0,
+            "durationMs": 40,
+            "intensity": 1.0,
+            "kind": "pulse",
+            "sharpness": 0.0
+          }
+        ],
+        "kind": "oneshot",
+        "loopGapMs": 0,
+        "protected": false,
+        "semanticId": "item.dissolve",
+        "totalDurationMs": 40
+      },
+      "semantic": "item.dissolve"
+    },
+    {
+      "androidComposition": {
+        "primitives": [
+          {
+            "delay_ms": 0,
+            "scale": 1.0,
+            "type": "PRIMITIVE_CLICK"
+          }
+        ]
+      },
+      "androidWaveform": {
+        "amplitudes": [
+          255
+        ],
+        "repeat": -1,
+        "timings_ms": [
+          40
+        ]
+      },
+      "globalScale": 0.5,
+      "hardwareClass": "ERM_Z",
+      "ios": [
+        {
+          "eventType": "hapticTransient",
+          "intensity": 1.0,
+          "relativeTime": 0.0,
+          "sharpness": 0.0
+        }
+      ],
+      "ir": {
+        "category": "ux",
+        "degradeTrace": [
+          "forced_amplitude"
+        ],
+        "effectId": "glitch_dissolve",
+        "events": [
+          {
+            "atMs": 0,
+            "durationMs": 40,
+            "intensity": 1.0,
+            "kind": "pulse",
+            "sharpness": 0.0
+          }
+        ],
+        "kind": "oneshot",
+        "loopGapMs": 0,
+        "protected": false,
+        "semanticId": "item.dissolve",
+        "totalDurationMs": 40
+      },
+      "semantic": "item.dissolve"
+    },
+    {
+      "androidComposition": {
+        "primitives": [
+          {
+            "delay_ms": 0,
+            "scale": 0.4,
+            "type": "PRIMITIVE_CLICK"
+          },
+          {
+            "delay_ms": 24,
+            "scale": 0.3,
+            "type": "PRIMITIVE_CLICK"
+          },
+          {
+            "delay_ms": 36,
+            "scale": 0.475,
+            "type": "PRIMITIVE_CLICK"
+          }
+        ]
+      },
+      "androidWaveform": {
+        "amplitudes": [
+          102,
+          0,
+          77,
+          0,
+          121
+        ],
+        "repeat": -1,
+        "timings_ms": [
+          12,
+          12,
+          12,
+          24,
+          12
+        ]
+      },
+      "globalScale": 1.0,
+      "hardwareClass": "LINEAR_X_LIMITED",
+      "ios": [
+        {
+          "eventType": "hapticTransient",
+          "intensity": 0.4,
+          "relativeTime": 0.0,
+          "sharpness": 0.7
+        },
+        {
+          "eventType": "hapticTransient",
+          "intensity": 0.3,
+          "relativeTime": 0.024,
+          "sharpness": 0.6
+        },
+        {
+          "eventType": "hapticTransient",
+          "intensity": 0.475,
+          "relativeTime": 0.06,
+          "sharpness": 0.85
+        }
+      ],
+      "ir": {
+        "category": "ux",
+        "degradeTrace": [
+          "simplify"
+        ],
+        "effectId": "glitch_dissolve",
+        "events": [
+          {
+            "atMs": 0,
+            "durationMs": 12,
+            "intensity": 0.4,
+            "kind": "pulse",
+            "sharpness": 0.7
+          },
+          {
+            "atMs": 24,
+            "durationMs": 12,
+            "intensity": 0.3,
+            "kind": "pulse",
+            "sharpness": 0.6
+          },
+          {
+            "atMs": 60,
+            "durationMs": 12,
+            "intensity": 0.475,
+            "kind": "pulse",
+            "sharpness": 0.85
+          }
+        ],
+        "kind": "oneshot",
+        "loopGapMs": 0,
+        "protected": false,
+        "semanticId": "item.dissolve",
+        "totalDurationMs": 72
+      },
+      "semantic": "item.dissolve"
+    },
+    {
+      "androidComposition": {
+        "primitives": [
+          {
+            "delay_ms": 0,
+            "scale": 0.2,
+            "type": "PRIMITIVE_CLICK"
+          },
+          {
+            "delay_ms": 24,
+            "scale": 0.15,
+            "type": "PRIMITIVE_CLICK"
+          },
+          {
+            "delay_ms": 36,
+            "scale": 0.2375,
+            "type": "PRIMITIVE_CLICK"
+          }
+        ]
+      },
+      "androidWaveform": {
+        "amplitudes": [
+          51,
+          0,
+          38,
+          0,
+          61
+        ],
+        "repeat": -1,
+        "timings_ms": [
+          12,
+          12,
+          12,
+          24,
+          12
+        ]
+      },
+      "globalScale": 0.5,
+      "hardwareClass": "LINEAR_X_LIMITED",
+      "ios": [
+        {
+          "eventType": "hapticTransient",
+          "intensity": 0.2,
+          "relativeTime": 0.0,
+          "sharpness": 0.7
+        },
+        {
+          "eventType": "hapticTransient",
+          "intensity": 0.15,
+          "relativeTime": 0.024,
+          "sharpness": 0.6
+        },
+        {
+          "eventType": "hapticTransient",
+          "intensity": 0.2375,
+          "relativeTime": 0.06,
+          "sharpness": 0.85
+        }
+      ],
+      "ir": {
+        "category": "ux",
+        "degradeTrace": [
+          "simplify"
+        ],
+        "effectId": "glitch_dissolve",
+        "events": [
+          {
+            "atMs": 0,
+            "durationMs": 12,
+            "intensity": 0.2,
+            "kind": "pulse",
+            "sharpness": 0.7
+          },
+          {
+            "atMs": 24,
+            "durationMs": 12,
+            "intensity": 0.15,
+            "kind": "pulse",
+            "sharpness": 0.6
+          },
+          {
+            "atMs": 60,
+            "durationMs": 12,
+            "intensity": 0.2375,
+            "kind": "pulse",
+            "sharpness": 0.85
+          }
+        ],
+        "kind": "oneshot",
+        "loopGapMs": 0,
+        "protected": false,
+        "semanticId": "item.dissolve",
+        "totalDurationMs": 72
+      },
+      "semantic": "item.dissolve"
+    },
+    {
+      "androidComposition": {
+        "primitives": [
+          {
+            "delay_ms": 0,
+            "scale": 0.8,
+            "type": "PRIMITIVE_CLICK"
+          },
+          {
+            "delay_ms": 40,
+            "scale": 0.6,
+            "type": "PRIMITIVE_CLICK"
+          },
+          {
+            "delay_ms": 60,
+            "scale": 0.95,
+            "type": "PRIMITIVE_CLICK"
+          }
+        ]
+      },
+      "androidWaveform": {
+        "amplitudes": [
+          204,
+          0,
+          153,
+          0,
+          242
+        ],
+        "repeat": -1,
+        "timings_ms": [
+          20,
+          20,
+          20,
+          40,
+          20
+        ]
+      },
+      "globalScale": 1.0,
+      "hardwareClass": "LINEAR_X_FULL",
+      "ios": [
+        {
+          "eventType": "hapticTransient",
+          "intensity": 0.8,
+          "relativeTime": 0.0,
+          "sharpness": 0.7
+        },
+        {
+          "eventType": "hapticTransient",
+          "intensity": 0.6,
+          "relativeTime": 0.04,
+          "sharpness": 0.6
+        },
+        {
+          "eventType": "hapticTransient",
+          "intensity": 0.95,
+          "relativeTime": 0.1,
+          "sharpness": 0.85
+        }
+      ],
+      "ir": {
+        "category": "ux",
+        "degradeTrace": [
+          "full"
+        ],
+        "effectId": "glitch_dissolve",
+        "events": [
+          {
+            "atMs": 0,
+            "durationMs": 20,
+            "intensity": 0.8,
+            "kind": "pulse",
+            "sharpness": 0.7
+          },
+          {
+            "atMs": 40,
+            "durationMs": 20,
+            "intensity": 0.6,
+            "kind": "pulse",
+            "sharpness": 0.6
+          },
+          {
+            "atMs": 100,
+            "durationMs": 20,
+            "intensity": 0.95,
+            "kind": "pulse",
+            "sharpness": 0.85
+          }
+        ],
+        "kind": "oneshot",
+        "loopGapMs": 0,
+        "protected": false,
+        "semanticId": "item.dissolve",
+        "totalDurationMs": 120
+      },
+      "semantic": "item.dissolve"
+    },
+    {
+      "androidComposition": {
+        "primitives": [
+          {
+            "delay_ms": 0,
+            "scale": 0.4,
+            "type": "PRIMITIVE_CLICK"
+          },
+          {
+            "delay_ms": 40,
+            "scale": 0.3,
+            "type": "PRIMITIVE_CLICK"
+          },
+          {
+            "delay_ms": 60,
+            "scale": 0.475,
+            "type": "PRIMITIVE_CLICK"
+          }
+        ]
+      },
+      "androidWaveform": {
+        "amplitudes": [
+          102,
+          0,
+          77,
+          0,
+          121
+        ],
+        "repeat": -1,
+        "timings_ms": [
+          20,
+          20,
+          20,
+          40,
+          20
+        ]
+      },
+      "globalScale": 0.5,
+      "hardwareClass": "LINEAR_X_FULL",
+      "ios": [
+        {
+          "eventType": "hapticTransient",
+          "intensity": 0.4,
+          "relativeTime": 0.0,
+          "sharpness": 0.7
+        },
+        {
+          "eventType": "hapticTransient",
+          "intensity": 0.3,
+          "relativeTime": 0.04,
+          "sharpness": 0.6
+        },
+        {
+          "eventType": "hapticTransient",
+          "intensity": 0.475,
+          "relativeTime": 0.1,
+          "sharpness": 0.85
+        }
+      ],
+      "ir": {
+        "category": "ux",
+        "degradeTrace": [
+          "full"
+        ],
+        "effectId": "glitch_dissolve",
+        "events": [
+          {
+            "atMs": 0,
+            "durationMs": 20,
+            "intensity": 0.4,
+            "kind": "pulse",
+            "sharpness": 0.7
+          },
+          {
+            "atMs": 40,
+            "durationMs": 20,
+            "intensity": 0.3,
+            "kind": "pulse",
+            "sharpness": 0.6
+          },
+          {
+            "atMs": 100,
+            "durationMs": 20,
+            "intensity": 0.475,
+            "kind": "pulse",
+            "sharpness": 0.85
+          }
+        ],
+        "kind": "oneshot",
+        "loopGapMs": 0,
+        "protected": false,
+        "semanticId": "item.dissolve",
+        "totalDurationMs": 120
+      },
+      "semantic": "item.dissolve"
+    },
+    {
+      "androidComposition": {
+        "primitives": [
+          {
+            "delay_ms": 0,
+            "scale": 1.0,
+            "type": "PRIMITIVE_CLICK"
+          }
+        ]
+      },
+      "androidWaveform": {
+        "amplitudes": [
+          255
+        ],
+        "repeat": -1,
+        "timings_ms": [
+          60
+        ]
+      },
+      "globalScale": 1.0,
+      "hardwareClass": "ERM_Z",
+      "ios": [
+        {
+          "eventType": "hapticTransient",
+          "intensity": 1.0,
+          "relativeTime": 0.0,
+          "sharpness": 0.0
+        }
+      ],
+      "ir": {
+        "category": "alert",
+        "degradeTrace": [
+          "forced_amplitude"
+        ],
+        "effectId": "message_ping",
+        "events": [
+          {
+            "atMs": 0,
+            "durationMs": 60,
+            "intensity": 1.0,
+            "kind": "pulse",
+            "sharpness": 0.0
+          }
+        ],
+        "kind": "oneshot",
+        "loopGapMs": 0,
+        "protected": false,
+        "semanticId": "notify.message",
+        "totalDurationMs": 60
+      },
+      "semantic": "notify.message"
+    },
+    {
+      "androidComposition": {
+        "primitives": [
+          {
+            "delay_ms": 0,
+            "scale": 1.0,
+            "type": "PRIMITIVE_CLICK"
+          }
+        ]
+      },
+      "androidWaveform": {
+        "amplitudes": [
+          255
+        ],
+        "repeat": -1,
+        "timings_ms": [
+          60
+        ]
+      },
+      "globalScale": 0.5,
+      "hardwareClass": "ERM_Z",
+      "ios": [
+        {
+          "eventType": "hapticTransient",
+          "intensity": 1.0,
+          "relativeTime": 0.0,
+          "sharpness": 0.0
+        }
+      ],
+      "ir": {
+        "category": "alert",
+        "degradeTrace": [
+          "forced_amplitude"
+        ],
+        "effectId": "message_ping",
+        "events": [
+          {
+            "atMs": 0,
+            "durationMs": 60,
+            "intensity": 1.0,
+            "kind": "pulse",
+            "sharpness": 0.0
+          }
+        ],
+        "kind": "oneshot",
+        "loopGapMs": 0,
+        "protected": false,
+        "semanticId": "notify.message",
+        "totalDurationMs": 60
+      },
+      "semantic": "notify.message"
+    },
+    {
+      "androidComposition": {
+        "primitives": [
+          {
+            "delay_ms": 0,
+            "scale": 0.35,
+            "type": "PRIMITIVE_CLICK"
+          },
+          {
+            "delay_ms": 120,
+            "scale": 0.25,
+            "type": "PRIMITIVE_CLICK"
+          }
+        ]
+      },
+      "androidWaveform": {
+        "amplitudes": [
+          89,
+          0,
+          64
+        ],
+        "repeat": -1,
+        "timings_ms": [
+          25,
+          95,
+          25
+        ]
+      },
+      "globalScale": 1.0,
+      "hardwareClass": "LINEAR_X_LIMITED",
+      "ios": [
+        {
+          "eventType": "hapticTransient",
+          "intensity": 0.35,
+          "relativeTime": 0.0,
+          "sharpness": 0.55
+        },
+        {
+          "eventType": "hapticTransient",
+          "intensity": 0.25,
+          "relativeTime": 0.12,
+          "sharpness": 0.45
+        }
+      ],
+      "ir": {
+        "category": "alert",
+        "degradeTrace": [
+          "simplify"
+        ],
+        "effectId": "message_ping",
+        "events": [
+          {
+            "atMs": 0,
+            "durationMs": 25,
+            "intensity": 0.35,
+            "kind": "pulse",
+            "sharpness": 0.55
+          },
+          {
+            "atMs": 120,
+            "durationMs": 25,
+            "intensity": 0.25,
+            "kind": "pulse",
+            "sharpness": 0.45
+          }
+        ],
+        "kind": "oneshot",
+        "loopGapMs": 0,
+        "protected": false,
+        "semanticId": "notify.message",
+        "totalDurationMs": 145
+      },
+      "semantic": "notify.message"
+    },
+    {
+      "androidComposition": {
+        "primitives": [
+          {
+            "delay_ms": 0,
+            "scale": 0.175,
+            "type": "PRIMITIVE_CLICK"
+          },
+          {
+            "delay_ms": 120,
+            "scale": 0.125,
+            "type": "PRIMITIVE_CLICK"
+          }
+        ]
+      },
+      "androidWaveform": {
+        "amplitudes": [
+          45,
+          0,
+          32
+        ],
+        "repeat": -1,
+        "timings_ms": [
+          25,
+          95,
+          25
+        ]
+      },
+      "globalScale": 0.5,
+      "hardwareClass": "LINEAR_X_LIMITED",
+      "ios": [
+        {
+          "eventType": "hapticTransient",
+          "intensity": 0.175,
+          "relativeTime": 0.0,
+          "sharpness": 0.55
+        },
+        {
+          "eventType": "hapticTransient",
+          "intensity": 0.125,
+          "relativeTime": 0.12,
+          "sharpness": 0.45
+        }
+      ],
+      "ir": {
+        "category": "alert",
+        "degradeTrace": [
+          "simplify"
+        ],
+        "effectId": "message_ping",
+        "events": [
+          {
+            "atMs": 0,
+            "durationMs": 25,
+            "intensity": 0.175,
+            "kind": "pulse",
+            "sharpness": 0.55
+          },
+          {
+            "atMs": 120,
+            "durationMs": 25,
+            "intensity": 0.125,
+            "kind": "pulse",
+            "sharpness": 0.45
+          }
+        ],
+        "kind": "oneshot",
+        "loopGapMs": 0,
+        "protected": false,
+        "semanticId": "notify.message",
+        "totalDurationMs": 145
+      },
+      "semantic": "notify.message"
+    },
+    {
+      "androidComposition": {
+        "primitives": [
+          {
+            "delay_ms": 0,
+            "scale": 0.7,
+            "type": "PRIMITIVE_CLICK"
+          },
+          {
+            "delay_ms": 120,
+            "scale": 0.5,
+            "type": "PRIMITIVE_CLICK"
+          }
+        ]
+      },
+      "androidWaveform": {
+        "amplitudes": [
+          179,
+          0,
+          128
+        ],
+        "repeat": -1,
+        "timings_ms": [
+          25,
+          95,
+          25
+        ]
+      },
+      "globalScale": 1.0,
+      "hardwareClass": "LINEAR_X_FULL",
+      "ios": [
+        {
+          "eventType": "hapticTransient",
+          "intensity": 0.7,
+          "relativeTime": 0.0,
+          "sharpness": 0.55
+        },
+        {
+          "eventType": "hapticTransient",
+          "intensity": 0.5,
+          "relativeTime": 0.12,
+          "sharpness": 0.45
+        }
+      ],
+      "ir": {
+        "category": "alert",
+        "degradeTrace": [
+          "full"
+        ],
+        "effectId": "message_ping",
+        "events": [
+          {
+            "atMs": 0,
+            "durationMs": 25,
+            "intensity": 0.7,
+            "kind": "pulse",
+            "sharpness": 0.55
+          },
+          {
+            "atMs": 120,
+            "durationMs": 25,
+            "intensity": 0.5,
+            "kind": "pulse",
+            "sharpness": 0.45
+          }
+        ],
+        "kind": "oneshot",
+        "loopGapMs": 0,
+        "protected": false,
+        "semanticId": "notify.message",
+        "totalDurationMs": 145
+      },
+      "semantic": "notify.message"
+    },
+    {
+      "androidComposition": {
+        "primitives": [
+          {
+            "delay_ms": 0,
+            "scale": 0.35,
+            "type": "PRIMITIVE_CLICK"
+          },
+          {
+            "delay_ms": 120,
+            "scale": 0.25,
+            "type": "PRIMITIVE_CLICK"
+          }
+        ]
+      },
+      "androidWaveform": {
+        "amplitudes": [
+          89,
+          0,
+          64
+        ],
+        "repeat": -1,
+        "timings_ms": [
+          25,
+          95,
+          25
+        ]
+      },
+      "globalScale": 0.5,
+      "hardwareClass": "LINEAR_X_FULL",
+      "ios": [
+        {
+          "eventType": "hapticTransient",
+          "intensity": 0.35,
+          "relativeTime": 0.0,
+          "sharpness": 0.55
+        },
+        {
+          "eventType": "hapticTransient",
+          "intensity": 0.25,
+          "relativeTime": 0.12,
+          "sharpness": 0.45
+        }
+      ],
+      "ir": {
+        "category": "alert",
+        "degradeTrace": [
+          "full"
+        ],
+        "effectId": "message_ping",
+        "events": [
+          {
+            "atMs": 0,
+            "durationMs": 25,
+            "intensity": 0.35,
+            "kind": "pulse",
+            "sharpness": 0.55
+          },
+          {
+            "atMs": 120,
+            "durationMs": 25,
+            "intensity": 0.25,
+            "kind": "pulse",
+            "sharpness": 0.45
+          }
+        ],
+        "kind": "oneshot",
+        "loopGapMs": 0,
+        "protected": false,
+        "semanticId": "notify.message",
+        "totalDurationMs": 145
+      },
+      "semantic": "notify.message"
+    },
+    {
+      "androidComposition": {
+        "primitives": [
+          {
+            "delay_ms": 0,
+            "scale": 1.0,
+            "type": "PRIMITIVE_CLICK"
+          }
+        ]
+      },
+      "androidWaveform": {
+        "amplitudes": [
+          255
+        ],
+        "repeat": -1,
+        "timings_ms": [
+          200
+        ]
+      },
+      "globalScale": 1.0,
+      "hardwareClass": "ERM_Z",
+      "ios": [
+        {
+          "eventType": "hapticTransient",
+          "intensity": 1.0,
+          "relativeTime": 0.0,
+          "sharpness": 0.0
+        }
+      ],
+      "ir": {
+        "category": "critical",
+        "degradeTrace": [
+          "forced_amplitude"
+        ],
+        "effectId": "anti_screenshot",
+        "events": [
+          {
+            "atMs": 0,
+            "durationMs": 200,
+            "intensity": 1.0,
+            "kind": "pulse",
+            "sharpness": 0.0
+          }
+        ],
+        "kind": "oneshot",
+        "loopGapMs": 0,
+        "protected": false,
+        "semanticId": "security.intrusion",
+        "totalDurationMs": 200
+      },
+      "semantic": "security.intrusion"
+    },
+    {
+      "androidComposition": {
+        "primitives": [
+          {
+            "delay_ms": 0,
+            "scale": 1.0,
+            "type": "PRIMITIVE_CLICK"
+          }
+        ]
+      },
+      "androidWaveform": {
+        "amplitudes": [
+          255
+        ],
+        "repeat": -1,
+        "timings_ms": [
+          200
+        ]
+      },
+      "globalScale": 0.5,
+      "hardwareClass": "ERM_Z",
+      "ios": [
+        {
+          "eventType": "hapticTransient",
+          "intensity": 1.0,
+          "relativeTime": 0.0,
+          "sharpness": 0.0
+        }
+      ],
+      "ir": {
+        "category": "critical",
+        "degradeTrace": [
+          "forced_amplitude"
+        ],
+        "effectId": "anti_screenshot",
+        "events": [
+          {
+            "atMs": 0,
+            "durationMs": 200,
+            "intensity": 1.0,
+            "kind": "pulse",
+            "sharpness": 0.0
+          }
+        ],
+        "kind": "oneshot",
+        "loopGapMs": 0,
+        "protected": false,
+        "semanticId": "security.intrusion",
+        "totalDurationMs": 200
+      },
+      "semantic": "security.intrusion"
+    },
+    {
+      "androidComposition": {
+        "primitives": [
+          {
+            "delay_ms": 0,
+            "scale": 1.0,
+            "type": "PRIMITIVE_CLICK"
+          },
+          {
+            "delay_ms": 100,
+            "scale": 1.0,
+            "type": "PRIMITIVE_CLICK"
+          }
+        ]
+      },
+      "androidWaveform": {
+        "amplitudes": [
+          255,
+          0,
+          255
+        ],
+        "repeat": -1,
+        "timings_ms": [
+          30,
+          70,
+          30
+        ]
+      },
+      "globalScale": 1.0,
+      "hardwareClass": "LINEAR_X_LIMITED",
+      "ios": [
+        {
+          "eventType": "hapticTransient",
+          "intensity": 1.0,
+          "relativeTime": 0.0,
+          "sharpness": 1.0
+        },
+        {
+          "eventType": "hapticTransient",
+          "intensity": 1.0,
+          "relativeTime": 0.1,
+          "sharpness": 1.0
+        }
+      ],
+      "ir": {
+        "category": "critical",
+        "degradeTrace": [
+          "n_pulses"
+        ],
+        "effectId": "anti_screenshot",
+        "events": [
+          {
+            "atMs": 0,
+            "durationMs": 30,
+            "intensity": 1.0,
+            "kind": "pulse",
+            "sharpness": 1.0
+          },
+          {
+            "atMs": 100,
+            "durationMs": 30,
+            "intensity": 1.0,
+            "kind": "pulse",
+            "sharpness": 1.0
+          }
+        ],
+        "kind": "oneshot",
+        "loopGapMs": 0,
+        "protected": false,
+        "semanticId": "security.intrusion",
+        "totalDurationMs": 130
+      },
+      "semantic": "security.intrusion"
+    },
+    {
+      "androidComposition": {
+        "primitives": [
+          {
+            "delay_ms": 0,
+            "scale": 0.5,
+            "type": "PRIMITIVE_CLICK"
+          },
+          {
+            "delay_ms": 100,
+            "scale": 0.5,
+            "type": "PRIMITIVE_CLICK"
+          }
+        ]
+      },
+      "androidWaveform": {
+        "amplitudes": [
+          128,
+          0,
+          128
+        ],
+        "repeat": -1,
+        "timings_ms": [
+          30,
+          70,
+          30
+        ]
+      },
+      "globalScale": 0.5,
+      "hardwareClass": "LINEAR_X_LIMITED",
+      "ios": [
+        {
+          "eventType": "hapticTransient",
+          "intensity": 0.5,
+          "relativeTime": 0.0,
+          "sharpness": 1.0
+        },
+        {
+          "eventType": "hapticTransient",
+          "intensity": 0.5,
+          "relativeTime": 0.1,
+          "sharpness": 1.0
+        }
+      ],
+      "ir": {
+        "category": "critical",
+        "degradeTrace": [
+          "n_pulses"
+        ],
+        "effectId": "anti_screenshot",
+        "events": [
+          {
+            "atMs": 0,
+            "durationMs": 30,
+            "intensity": 0.5,
+            "kind": "pulse",
+            "sharpness": 1.0
+          },
+          {
+            "atMs": 100,
+            "durationMs": 30,
+            "intensity": 0.5,
+            "kind": "pulse",
+            "sharpness": 1.0
+          }
+        ],
+        "kind": "oneshot",
+        "loopGapMs": 0,
+        "protected": false,
+        "semanticId": "security.intrusion",
+        "totalDurationMs": 130
+      },
+      "semantic": "security.intrusion"
+    },
+    {
+      "androidComposition": {
+        "primitives": [
+          {
+            "delay_ms": 0,
+            "scale": 1.0,
+            "type": "PRIMITIVE_CLICK"
+          },
+          {
+            "delay_ms": 80,
+            "scale": 1.0,
+            "type": "PRIMITIVE_CLICK"
+          },
+          {
+            "delay_ms": 80,
+            "scale": 1.0,
+            "type": "PRIMITIVE_CLICK"
+          },
+          {
+            "delay_ms": 80,
+            "scale": 1.0,
+            "type": "PRIMITIVE_CLICK"
+          }
+        ]
+      },
+      "androidWaveform": {
+        "amplitudes": [
+          255,
+          0,
+          255,
+          0,
+          255,
+          0,
+          255
+        ],
+        "repeat": -1,
+        "timings_ms": [
+          30,
+          50,
+          30,
+          50,
+          30,
+          50,
+          30
+        ]
+      },
+      "globalScale": 1.0,
+      "hardwareClass": "LINEAR_X_FULL",
+      "ios": [
+        {
+          "eventType": "hapticTransient",
+          "intensity": 1.0,
+          "relativeTime": 0.0,
+          "sharpness": 1.0
+        },
+        {
+          "eventType": "hapticTransient",
+          "intensity": 1.0,
+          "relativeTime": 0.08,
+          "sharpness": 1.0
+        },
+        {
+          "eventType": "hapticTransient",
+          "intensity": 1.0,
+          "relativeTime": 0.16,
+          "sharpness": 1.0
+        },
+        {
+          "eventType": "hapticTransient",
+          "intensity": 1.0,
+          "relativeTime": 0.24,
+          "sharpness": 1.0
+        }
+      ],
+      "ir": {
+        "category": "critical",
+        "degradeTrace": [
+          "full"
+        ],
+        "effectId": "anti_screenshot",
+        "events": [
+          {
+            "atMs": 0,
+            "durationMs": 30,
+            "intensity": 1.0,
+            "kind": "pulse",
+            "sharpness": 1.0
+          },
+          {
+            "atMs": 80,
+            "durationMs": 30,
+            "intensity": 1.0,
+            "kind": "pulse",
+            "sharpness": 1.0
+          },
+          {
+            "atMs": 160,
+            "durationMs": 30,
+            "intensity": 1.0,
+            "kind": "pulse",
+            "sharpness": 1.0
+          },
+          {
+            "atMs": 240,
+            "durationMs": 30,
+            "intensity": 1.0,
+            "kind": "pulse",
+            "sharpness": 1.0
+          }
+        ],
+        "kind": "oneshot",
+        "loopGapMs": 0,
+        "protected": false,
+        "semanticId": "security.intrusion",
+        "totalDurationMs": 270
+      },
+      "semantic": "security.intrusion"
+    },
+    {
+      "androidComposition": {
+        "primitives": [
+          {
+            "delay_ms": 0,
+            "scale": 0.5,
+            "type": "PRIMITIVE_CLICK"
+          },
+          {
+            "delay_ms": 80,
+            "scale": 0.5,
+            "type": "PRIMITIVE_CLICK"
+          },
+          {
+            "delay_ms": 80,
+            "scale": 0.5,
+            "type": "PRIMITIVE_CLICK"
+          },
+          {
+            "delay_ms": 80,
+            "scale": 0.5,
+            "type": "PRIMITIVE_CLICK"
+          }
+        ]
+      },
+      "androidWaveform": {
+        "amplitudes": [
+          128,
+          0,
+          128,
+          0,
+          128,
+          0,
+          128
+        ],
+        "repeat": -1,
+        "timings_ms": [
+          30,
+          50,
+          30,
+          50,
+          30,
+          50,
+          30
+        ]
+      },
+      "globalScale": 0.5,
+      "hardwareClass": "LINEAR_X_FULL",
+      "ios": [
+        {
+          "eventType": "hapticTransient",
+          "intensity": 0.5,
+          "relativeTime": 0.0,
+          "sharpness": 1.0
+        },
+        {
+          "eventType": "hapticTransient",
+          "intensity": 0.5,
+          "relativeTime": 0.08,
+          "sharpness": 1.0
+        },
+        {
+          "eventType": "hapticTransient",
+          "intensity": 0.5,
+          "relativeTime": 0.16,
+          "sharpness": 1.0
+        },
+        {
+          "eventType": "hapticTransient",
+          "intensity": 0.5,
+          "relativeTime": 0.24,
+          "sharpness": 1.0
+        }
+      ],
+      "ir": {
+        "category": "critical",
+        "degradeTrace": [
+          "full"
+        ],
+        "effectId": "anti_screenshot",
+        "events": [
+          {
+            "atMs": 0,
+            "durationMs": 30,
+            "intensity": 0.5,
+            "kind": "pulse",
+            "sharpness": 1.0
+          },
+          {
+            "atMs": 80,
+            "durationMs": 30,
+            "intensity": 0.5,
+            "kind": "pulse",
+            "sharpness": 1.0
+          },
+          {
+            "atMs": 160,
+            "durationMs": 30,
+            "intensity": 0.5,
+            "kind": "pulse",
+            "sharpness": 1.0
+          },
+          {
+            "atMs": 240,
+            "durationMs": 30,
+            "intensity": 0.5,
+            "kind": "pulse",
+            "sharpness": 1.0
+          }
+        ],
+        "kind": "oneshot",
+        "loopGapMs": 0,
+        "protected": false,
+        "semanticId": "security.intrusion",
+        "totalDurationMs": 270
+      },
+      "semantic": "security.intrusion"
+    },
+    {
+      "androidComposition": {
+        "primitives": [
+          {
+            "delay_ms": 0,
+            "scale": 1.0,
+            "type": "PRIMITIVE_CLICK"
+          }
+        ]
+      },
+      "androidWaveform": {
+        "amplitudes": [
+          255
+        ],
+        "repeat": -1,
+        "timings_ms": [
+          40
+        ]
+      },
+      "globalScale": 1.0,
+      "hardwareClass": "ERM_Z",
+      "ios": [
+        {
+          "eventType": "hapticTransient",
+          "intensity": 1.0,
+          "relativeTime": 0.0,
+          "sharpness": 0.0
+        }
+      ],
+      "ir": {
+        "category": "ux",
+        "degradeTrace": [
+          "forced_amplitude"
+        ],
+        "effectId": "magnetic_snap",
+        "events": [
+          {
+            "atMs": 0,
+            "durationMs": 40,
+            "intensity": 1.0,
+            "kind": "pulse",
+            "sharpness": 0.0
+          }
+        ],
+        "kind": "oneshot",
+        "loopGapMs": 0,
+        "protected": false,
+        "semanticId": "selection.snap",
+        "totalDurationMs": 40
+      },
+      "semantic": "selection.snap"
+    },
+    {
+      "androidComposition": {
+        "primitives": [
+          {
+            "delay_ms": 0,
+            "scale": 1.0,
+            "type": "PRIMITIVE_CLICK"
+          }
+        ]
+      },
+      "androidWaveform": {
+        "amplitudes": [
+          255
+        ],
+        "repeat": -1,
+        "timings_ms": [
+          40
+        ]
+      },
+      "globalScale": 0.5,
+      "hardwareClass": "ERM_Z",
+      "ios": [
+        {
+          "eventType": "hapticTransient",
+          "intensity": 1.0,
+          "relativeTime": 0.0,
+          "sharpness": 0.0
+        }
+      ],
+      "ir": {
+        "category": "ux",
+        "degradeTrace": [
+          "forced_amplitude"
+        ],
+        "effectId": "magnetic_snap",
+        "events": [
+          {
+            "atMs": 0,
+            "durationMs": 40,
+            "intensity": 1.0,
+            "kind": "pulse",
+            "sharpness": 0.0
+          }
+        ],
+        "kind": "oneshot",
+        "loopGapMs": 0,
+        "protected": false,
+        "semanticId": "selection.snap",
+        "totalDurationMs": 40
+      },
+      "semantic": "selection.snap"
+    },
+    {
+      "androidComposition": {
+        "primitives": [
+          {
+            "delay_ms": 0,
+            "scale": 0.75,
+            "type": "PRIMITIVE_CLICK"
+          }
+        ]
+      },
+      "androidWaveform": {
+        "amplitudes": [
+          191
+        ],
+        "repeat": -1,
+        "timings_ms": [
+          20
+        ]
+      },
+      "globalScale": 1.0,
+      "hardwareClass": "LINEAR_X_LIMITED",
+      "ios": [
+        {
+          "eventType": "hapticTransient",
+          "intensity": 0.75,
+          "relativeTime": 0.0,
+          "sharpness": 0.35
+        }
+      ],
+      "ir": {
+        "category": "ux",
+        "degradeTrace": [
+          "single_pulse"
+        ],
+        "effectId": "magnetic_snap",
+        "events": [
+          {
+            "atMs": 0,
+            "durationMs": 20,
+            "intensity": 0.75,
+            "kind": "pulse",
+            "sharpness": 0.35
+          }
+        ],
+        "kind": "oneshot",
+        "loopGapMs": 0,
+        "protected": false,
+        "semanticId": "selection.snap",
+        "totalDurationMs": 20
+      },
+      "semantic": "selection.snap"
+    },
+    {
+      "androidComposition": {
+        "primitives": [
+          {
+            "delay_ms": 0,
+            "scale": 0.375,
+            "type": "PRIMITIVE_CLICK"
+          }
+        ]
+      },
+      "androidWaveform": {
+        "amplitudes": [
+          96
+        ],
+        "repeat": -1,
+        "timings_ms": [
+          20
+        ]
+      },
+      "globalScale": 0.5,
+      "hardwareClass": "LINEAR_X_LIMITED",
+      "ios": [
+        {
+          "eventType": "hapticTransient",
+          "intensity": 0.375,
+          "relativeTime": 0.0,
+          "sharpness": 0.35
+        }
+      ],
+      "ir": {
+        "category": "ux",
+        "degradeTrace": [
+          "single_pulse"
+        ],
+        "effectId": "magnetic_snap",
+        "events": [
+          {
+            "atMs": 0,
+            "durationMs": 20,
+            "intensity": 0.375,
+            "kind": "pulse",
+            "sharpness": 0.35
+          }
+        ],
+        "kind": "oneshot",
+        "loopGapMs": 0,
+        "protected": false,
+        "semanticId": "selection.snap",
+        "totalDurationMs": 20
+      },
+      "semantic": "selection.snap"
+    },
+    {
+      "androidComposition": {
+        "primitives": [
+          {
+            "delay_ms": 0,
+            "scale": 0.45,
+            "type": "PRIMITIVE_CLICK"
+          },
+          {
+            "delay_ms": 40,
+            "scale": 0.75,
+            "type": "PRIMITIVE_CLICK"
+          }
+        ]
+      },
+      "androidWaveform": {
+        "amplitudes": [
+          115,
+          0,
+          191
+        ],
+        "repeat": -1,
+        "timings_ms": [
+          20,
+          20,
+          20
+        ]
+      },
+      "globalScale": 1.0,
+      "hardwareClass": "LINEAR_X_FULL",
+      "ios": [
+        {
+          "eventType": "hapticTransient",
+          "intensity": 0.45,
+          "relativeTime": 0.0,
+          "sharpness": 0.25
+        },
+        {
+          "eventType": "hapticTransient",
+          "intensity": 0.75,
+          "relativeTime": 0.04,
+          "sharpness": 0.35
+        }
+      ],
+      "ir": {
+        "category": "ux",
+        "degradeTrace": [
+          "full"
+        ],
+        "effectId": "magnetic_snap",
+        "events": [
+          {
+            "atMs": 0,
+            "durationMs": 20,
+            "intensity": 0.45,
+            "kind": "pulse",
+            "sharpness": 0.25
+          },
+          {
+            "atMs": 40,
+            "durationMs": 20,
+            "intensity": 0.75,
+            "kind": "pulse",
+            "sharpness": 0.35
+          }
+        ],
+        "kind": "oneshot",
+        "loopGapMs": 0,
+        "protected": false,
+        "semanticId": "selection.snap",
+        "totalDurationMs": 60
+      },
+      "semantic": "selection.snap"
+    },
+    {
+      "androidComposition": {
+        "primitives": [
+          {
+            "delay_ms": 0,
+            "scale": 0.225,
+            "type": "PRIMITIVE_CLICK"
+          },
+          {
+            "delay_ms": 40,
+            "scale": 0.375,
+            "type": "PRIMITIVE_CLICK"
+          }
+        ]
+      },
+      "androidWaveform": {
+        "amplitudes": [
+          57,
+          0,
+          96
+        ],
+        "repeat": -1,
+        "timings_ms": [
+          20,
+          20,
+          20
+        ]
+      },
+      "globalScale": 0.5,
+      "hardwareClass": "LINEAR_X_FULL",
+      "ios": [
+        {
+          "eventType": "hapticTransient",
+          "intensity": 0.225,
+          "relativeTime": 0.0,
+          "sharpness": 0.25
+        },
+        {
+          "eventType": "hapticTransient",
+          "intensity": 0.375,
+          "relativeTime": 0.04,
+          "sharpness": 0.35
+        }
+      ],
+      "ir": {
+        "category": "ux",
+        "degradeTrace": [
+          "full"
+        ],
+        "effectId": "magnetic_snap",
+        "events": [
+          {
+            "atMs": 0,
+            "durationMs": 20,
+            "intensity": 0.225,
+            "kind": "pulse",
+            "sharpness": 0.25
+          },
+          {
+            "atMs": 40,
+            "durationMs": 20,
+            "intensity": 0.375,
+            "kind": "pulse",
+            "sharpness": 0.35
+          }
+        ],
+        "kind": "oneshot",
+        "loopGapMs": 0,
+        "protected": false,
+        "semanticId": "selection.snap",
+        "totalDurationMs": 60
+      },
+      "semantic": "selection.snap"
+    }
+  ]
+}

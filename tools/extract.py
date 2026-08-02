@@ -35,6 +35,8 @@ import os
 import re
 import sys
 
+import yaml
+
 # ── vault 文档定位 ──────────────────────────────────────────────────────
 DEFAULT_VAULT = r"D:\wiki\general-os-system\20-知识\项目记录"
 
@@ -296,6 +298,36 @@ def extract_contracts(vault: str) -> str:
     return "\n".join(lines)
 
 
+def build_bundle(vault: str, artifacts: dict[str, str]) -> str:
+    """
+    spec/bundle.json —— **各端真正内嵌的产物**。
+
+    ⚠️ **这是对工程骨架 §二「Resources/{semantics.yaml, effects.yaml}」的有意偏离**，
+    理由有二：
+
+    1. **零第三方解析依赖。** 给一个触觉库塞 snakeyaml（Android）/ Yams（Swift）是
+       实打实的成本：方法数、与宿主 App 的版本冲突、额外的攻击面。而 JSON 在双端
+       都是标准库（`org.json` / `JSONDecoder`）。
+    2. **消掉整类 YAML 1.1 地雷。** `transitions.yaml` 曾用 `on:` 作键——它是 YAML 1.1
+       的布尔字面量，PyYAML / snakeyaml / Yams 都会把它解析成布尔 `True`，双端 loader
+       会一起坏掉。JSON 没有这类隐式类型转换。
+
+    YAML 仍是**人读、评审、CI 逐字节 diff** 的产物；JSON 是**机器吃**的产物。
+    两者同源同批生成，CI 规则 10 一起校验，不构成双写。
+    """
+    import json
+
+    bundle = {
+        "_generated": "由 tools/extract.py 从 vault SSOT 生成，禁止手改",
+        "semantics": yaml.safe_load(artifacts["semantics.yaml"])["semantics"],
+        "effects": yaml.safe_load(artifacts["effects.yaml"])["effects"],
+        "degradation": yaml.safe_load(artifacts["degradation.yaml"])["degradation"],
+        "transitions": yaml.safe_load(artifacts["transitions.yaml"]),
+        "parity": yaml.safe_load(artifacts["parity.yaml"])["parity"],
+    }
+    return json.dumps(bundle, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
+
+
 ARTIFACTS = [
     ("semantics.yaml",   extract_semantics,   "语义层与中立IR §2.2"),
     ("effects.yaml",     extract_effects,     "波形数据SSOT §二"),
@@ -308,12 +340,15 @@ ARTIFACTS = [
 
 def build(vault: str) -> dict[str, str]:
     out = {}
+    raw = {}
     for name, fn, src in ARTIFACTS:
         body = fn(vault)
+        raw[name] = body
         if name.endswith(".yaml"):
             out[name] = GENERATED_HEADER.format(src=src) + body + "\n"
         else:
             out[name] = body
+    out["bundle.json"] = build_bundle(vault, raw)
     return out
 
 

@@ -1,0 +1,945 @@
+{
+  "_generated": "由 tools/extract.py 从 vault SSOT 生成，禁止手改",
+  "degradation": {
+    "anti_screenshot": {
+      "ERM_Z": {
+        "action": "forced_amplitude",
+        "duration_ms": 200
+      },
+      "LINEAR_X_FULL": {
+        "action": "full"
+      },
+      "LINEAR_X_LIMITED": {
+        "action": "n_pulses",
+        "count": 2,
+        "interval_ms": 100
+      }
+    },
+    "default_ui_click": {
+      "ERM_Z": {
+        "action": "silent"
+      },
+      "LINEAR_X_FULL": {
+        "action": "full"
+      },
+      "LINEAR_X_LIMITED": {
+        "action": "full"
+      }
+    },
+    "gesture_continuous": {
+      "ERM_Z": {
+        "action": "silent"
+      },
+      "LINEAR_X_FULL": {
+        "action": "full"
+      },
+      "LINEAR_X_LIMITED": {
+        "action": "amplitude_only"
+      }
+    },
+    "glitch_dissolve": {
+      "ERM_Z": {
+        "action": "forced_amplitude",
+        "duration_ms": 40
+      },
+      "LINEAR_X_FULL": {
+        "action": "full"
+      },
+      "LINEAR_X_LIMITED": {
+        "action": "simplify",
+        "amplitude_scale": 0.5,
+        "duration_scale": 0.6
+      }
+    },
+    "magnetic_snap": {
+      "ERM_Z": {
+        "action": "forced_amplitude",
+        "duration_ms": 40
+      },
+      "LINEAR_X_FULL": {
+        "action": "full"
+      },
+      "LINEAR_X_LIMITED": {
+        "action": "single_pulse"
+      }
+    },
+    "message_ping": {
+      "ERM_Z": {
+        "action": "forced_amplitude",
+        "duration_ms": 60
+      },
+      "LINEAR_X_FULL": {
+        "action": "full"
+      },
+      "LINEAR_X_LIMITED": {
+        "action": "simplify",
+        "amplitude_scale": 0.5
+      }
+    },
+    "ticket_rip": {
+      "ERM_Z": {
+        "action": "forced_amplitude",
+        "duration_ms": 60
+      },
+      "LINEAR_X_FULL": {
+        "action": "full"
+      },
+      "LINEAR_X_LIMITED": {
+        "action": "tail_pulse_only"
+      }
+    }
+  },
+  "effects": {
+    "anti_screenshot": {
+      "android": {
+        "min_api": 29,
+        "waveform": {
+          "amplitudes": [
+            255,
+            0,
+            255,
+            0,
+            255,
+            0,
+            255
+          ],
+          "timings_ms": [
+            30,
+            50,
+            30,
+            50,
+            30,
+            50,
+            30
+          ]
+        }
+      },
+      "category": "critical",
+      "ios_core_haptics": {
+        "events": [
+          {
+            "duration_ms": 30,
+            "intensity": 1.0,
+            "sharpness": 1.0,
+            "time_ms": 0,
+            "type": "hapticTransient"
+          },
+          {
+            "duration_ms": 30,
+            "intensity": 1.0,
+            "sharpness": 1.0,
+            "time_ms": 80,
+            "type": "hapticTransient"
+          },
+          {
+            "duration_ms": 30,
+            "intensity": 1.0,
+            "sharpness": 1.0,
+            "time_ms": 160,
+            "type": "hapticTransient"
+          },
+          {
+            "duration_ms": 30,
+            "intensity": 1.0,
+            "sharpness": 1.0,
+            "time_ms": 240,
+            "type": "hapticTransient"
+          }
+        ]
+      }
+    },
+    "default_ui_click": {
+      "android": {
+        "composition": {
+          "primitives": [
+            {
+              "delay_ms": 0,
+              "scale": 0.5,
+              "type": "PRIMITIVE_CLICK"
+            }
+          ],
+          "requires_primitives": [
+            "PRIMITIVE_CLICK"
+          ]
+        },
+        "fallback_api_lt_30": {
+          "waveform": {
+            "amplitudes": [
+              128
+            ],
+            "timings_ms": [
+              15
+            ]
+          }
+        },
+        "min_api": 30
+      },
+      "category": "ux",
+      "ios_core_haptics": {
+        "events": [
+          {
+            "duration_ms": 15,
+            "intensity": 0.5,
+            "sharpness": 0.5,
+            "time_ms": 0,
+            "type": "hapticTransient"
+          }
+        ]
+      }
+    },
+    "gesture_continuous": {
+      "android": {
+        "min_api": 29,
+        "sustain": {
+          "amplitude_from": "intensity",
+          "segment_ms": 120
+        }
+      },
+      "category": "ux",
+      "continuous": {
+        "idle_timeout_ms": null,
+        "initial_intensity": 0.5,
+        "initial_sharpness": 0.5,
+        "max_duration_ms": 30000,
+        "segment_ms": 120
+      },
+      "ios_core_haptics": {
+        "dynamic_parameters": [
+          "hapticIntensityControl",
+          "hapticSharpnessControl"
+        ],
+        "events": [
+          {
+            "duration_ms": 30000,
+            "intensity": 0.5,
+            "sharpness": 0.5,
+            "time_ms": 0,
+            "type": "hapticContinuous"
+          }
+        ]
+      },
+      "kind": "continuous"
+    },
+    "glitch_dissolve": {
+      "android": {
+        "min_api": 29,
+        "waveform": {
+          "amplitudes": [
+            204,
+            0,
+            153,
+            0,
+            242
+          ],
+          "timings_ms": [
+            20,
+            20,
+            20,
+            40,
+            20
+          ]
+        }
+      },
+      "category": "ux",
+      "ios_core_haptics": {
+        "events": [
+          {
+            "duration_ms": 20,
+            "intensity": 0.8,
+            "sharpness": 0.7,
+            "time_ms": 0,
+            "type": "hapticTransient"
+          },
+          {
+            "duration_ms": 20,
+            "intensity": 0.6,
+            "sharpness": 0.6,
+            "time_ms": 40,
+            "type": "hapticTransient"
+          },
+          {
+            "duration_ms": 20,
+            "intensity": 0.95,
+            "sharpness": 0.85,
+            "time_ms": 100,
+            "type": "hapticTransient"
+          }
+        ]
+      }
+    },
+    "magnetic_snap": {
+      "android": {
+        "composition": {
+          "primitives": [
+            {
+              "delay_ms": 0,
+              "scale": 0.45,
+              "type": "PRIMITIVE_CLICK"
+            },
+            {
+              "delay_ms": 40,
+              "scale": 0.75,
+              "type": "PRIMITIVE_CLICK"
+            }
+          ],
+          "requires_primitives": [
+            "PRIMITIVE_CLICK"
+          ]
+        },
+        "fallback_api_lt_30": {
+          "waveform": {
+            "amplitudes": [
+              115,
+              0,
+              191
+            ],
+            "timings_ms": [
+              20,
+              20,
+              20
+            ]
+          }
+        },
+        "min_api": 30
+      },
+      "category": "ux",
+      "ios_core_haptics": {
+        "events": [
+          {
+            "duration_ms": 20,
+            "intensity": 0.45,
+            "sharpness": 0.25,
+            "time_ms": 0,
+            "type": "hapticTransient"
+          },
+          {
+            "duration_ms": 20,
+            "intensity": 0.75,
+            "sharpness": 0.35,
+            "time_ms": 40,
+            "type": "hapticTransient"
+          }
+        ]
+      }
+    },
+    "message_ping": {
+      "android": {
+        "min_api": 29,
+        "waveform": {
+          "amplitudes": [
+            179,
+            0,
+            128
+          ],
+          "timings_ms": [
+            25,
+            95,
+            25
+          ]
+        }
+      },
+      "category": "alert",
+      "ios_core_haptics": {
+        "events": [
+          {
+            "duration_ms": 25,
+            "intensity": 0.7,
+            "sharpness": 0.55,
+            "time_ms": 0,
+            "type": "hapticTransient"
+          },
+          {
+            "duration_ms": 25,
+            "intensity": 0.5,
+            "sharpness": 0.45,
+            "time_ms": 120,
+            "type": "hapticTransient"
+          }
+        ]
+      }
+    },
+    "ticket_rip": {
+      "android": {
+        "min_api": 29,
+        "waveform": {
+          "amplitudes": [
+            89,
+            255
+          ],
+          "timings_ms": [
+            200,
+            30
+          ]
+        }
+      },
+      "category": "ux",
+      "ios_core_haptics": {
+        "events": [
+          {
+            "duration_ms": 200,
+            "intensity": 0.35,
+            "sharpness": 0.2,
+            "time_ms": 0,
+            "type": "hapticContinuous"
+          },
+          {
+            "duration_ms": 30,
+            "intensity": 1.0,
+            "sharpness": 0.9,
+            "time_ms": 200,
+            "type": "hapticTransient"
+          }
+        ]
+      }
+    }
+  },
+  "parity": {
+    "P-01": {
+      "android": "无 continuous 概念",
+      "class": "A",
+      "ios": "`hapticContinuous` + `sendParameters` 实时改参",
+      "metric": null,
+      "residual": "段边界在极端强度跳变时可感",
+      "resolution": "恒振幅分段（`segment_ms`）+ 参数变化时取消当前段重排",
+      "status": "verified",
+      "title": "连续通道原生语义",
+      "verify": "双端等价测试 + 真机主观"
+    },
+    "P-02": {
+      "android": "只能在 `Choreographer` 回调里调 `vibrate()`，再经 binder IPC → system_server → HAL，调度级",
+      "class": "B",
+      "ios": "`start(atTime:)` 直接吃 hostTime，硬件级",
+      "metric": "对齐误差 p50/p95/p99，分 OEM",
+      "residual": "iOS 硬件级 / Android 调度级，OEM 差异显著；具体量待实测",
+      "resolution": "统一弱化为\"下一 VSync 提交\"语义（`onNextFrame`），不承诺绝对时刻",
+      "status": "pending（V5 残差待实测）",
+      "title": "帧对齐精度",
+      "verify": "加速度计实测对齐误差"
+    },
+    "P-03": {
+      "android": "`cancel()` 是全局的",
+      "class": "C",
+      "ios": "`player.stop()` 精确停一个",
+      "metric": null,
+      "residual": "并发独立取消在 Android 物理不可能",
+      "resolution": "被取消 token 若是唯一活跃振动 → `cancel()`；否则标记\"到点即停\"等自然结束",
+      "status": "verified",
+      "title": "单播放取消",
+      "verify": null
+    },
+    "P-04": {
+      "android": "完全不存在，振幅是唯一维度",
+      "class": "D",
+      "ios": "Core Haptics 原生支持",
+      "metric": null,
+      "residual": null,
+      "resolution": "`hardwareCapabilities().supportsSharpness: Bool`；文档明示 `setGlobalScale` 双端手感不等价",
+      "status": "verified",
+      "title": "sharpness 维度",
+      "verify": null
+    },
+    "P-05": {
+      "android": "单 slot，新 `vibrate` 打断旧的",
+      "class": "C",
+      "ios": "Core Haptics 真能叠加",
+      "metric": null,
+      "residual": "Android 无法叠加共存",
+      "resolution": "抢占策略吸收（活跃 handle 队列在 Android 长度 ≈ 1）",
+      "status": "verified",
+      "title": "多振动并存",
+      "verify": null
+    },
+    "P-06": {
+      "android": "持 wake lock 可后台振动（Android 13+ 收紧中）",
+      "class": "D",
+      "ios": "haptics 仅前台可用，进 background 后 engine 被系统 stop",
+      "metric": null,
+      "residual": null,
+      "resolution": "`hardwareCapabilities().supportsBackgroundPlayback: Bool`；`security.intrusion` 类告警须由业务方决定是否用通知/声音兜底",
+      "status": "pending（V1）",
+      "title": "后台播放能力",
+      "verify": null
+    },
+    "P-07": {
+      "android": "只有 `hasAmplitudeControl()`",
+      "class": "C",
+      "ios": "只有 `supportsHaptics` 布尔",
+      "metric": null,
+      "residual": "`LINEAR_X_LIMITED` 无法自动识别",
+      "resolution": "双端均产出二档；第三档降为可选配置覆盖，默认不启用",
+      "status": "pending（V4）",
+      "title": "硬件档探测粒度",
+      "verify": null
+    },
+    "P-08": {
+      "android": "`PRIMITIVE_*` 因机型而异，API 30+ 不保证支持",
+      "class": "C",
+      "ios": "无原语概念",
+      "metric": null,
+      "residual": "部分机型走不到 Composition 路径",
+      "resolution": "运行时 `areAllPrimitivesSupported()`，不通过退 waveform",
+      "status": "verified",
+      "title": "原语可用性",
+      "verify": null
+    },
+    "P-09": {
+      "android": "无此概念",
+      "class": "C",
+      "ios": "engine 绑 `AVAudioSession`",
+      "metric": null,
+      "residual": "iOS 独有的中断/自愈路径",
+      "resolution": "iOS 侧 `playsHapticsOnly = true`，不参与 session 激活竞争",
+      "status": "pending（V2）",
+      "title": "音频会话耦合",
+      "verify": null
+    },
+    "P-10": {
+      "android": "长振动可能需 partial wake lock",
+      "class": "C",
+      "ios": "无需",
+      "metric": null,
+      "residual": "Android 独有资源；有效性本身待验证",
+      "resolution": "wake lock 绑 `PlaybackHandle`，`release` 时释放",
+      "status": "pending（V3）",
+      "title": "唤醒锁",
+      "verify": null
+    },
+    "P-11": {
+      "android": "`vibrate()` 无返回值",
+      "class": "A",
+      "ios": "`makePlayer` 返回真句柄",
+      "metric": null,
+      "residual": "无（对上层语义一致）",
+      "resolution": "Android 侧虚拟句柄：自维护排程队列 + 预计结束时刻 + 取消标志",
+      "status": "verified",
+      "title": "player 句柄",
+      "verify": "FSM fuzz + 泄漏断言"
+    },
+    "P-12": {
+      "android": "波形必须给定时长",
+      "class": "A",
+      "ios": "`hapticTransient` 是瞬时，无需时长",
+      "metric": null,
+      "residual": "无",
+      "resolution": "IR 统一携带 `durationMs`；iOS 侧忽略，Android 侧使用",
+      "status": "verified",
+      "title": "瞬时事件表达",
+      "verify": "生成器黄金测试"
+    },
+    "P-13": {
+      "android": "`0–255` 整数",
+      "class": "A",
+      "ios": "`0.0–1.0` 浮点",
+      "metric": null,
+      "residual": "量化误差 < 1/255，不可感知",
+      "resolution": "IR 统一 `0.0–1.0`；`round(x*255)` 在 Android 翻译器内完成",
+      "status": "verified",
+      "title": "振幅取值域",
+      "verify": "单测"
+    },
+    "P-14": {
+      "android": "省电模式直接禁用振动",
+      "class": "D",
+      "ios": "「系统触感反馈」关闭后 `UIFeedbackGenerator` 静音，Core Haptics 不受影响",
+      "metric": null,
+      "residual": null,
+      "resolution": "`hardwareCapabilities().systemHapticsEnabled: Bool` + `MuteStateObserver` 变更通知",
+      "status": "verified",
+      "title": "系统触觉总开关语义",
+      "verify": null
+    },
+    "P-15": {
+      "android": "需 API 30+",
+      "class": "C",
+      "ios": "—",
+      "metric": null,
+      "residual": "API 29 设备只能走 waveform",
+      "resolution": "API 能力门先于硬件档求值",
+      "status": "verified",
+      "title": "Composition API 门",
+      "verify": null
+    },
+    "P-16": {
+      "android": "Vibrator 服务无\"启动\"概念",
+      "class": "C",
+      "ios": "engine 会被系统 stop，需 `resetHandler`/`stoppedHandler` 重建",
+      "metric": null,
+      "residual": "iOS 独有的熔断冷却期",
+      "resolution": "iOS 侧自愈 + 熔断；Android 侧无对应逻辑",
+      "status": "verified",
+      "title": "引擎中断自愈",
+      "verify": null
+    },
+    "P-17": {
+      "android": "`createWaveform(repeat = index)`",
+      "class": "A",
+      "ios": "pattern 层 repeat",
+      "metric": null,
+      "residual": "无",
+      "resolution": "IR 用 `kind: looping` + `loopGapMs`，各端翻译",
+      "status": "verified",
+      "title": "循环实现",
+      "verify": "双端等价测试"
+    },
+    "P-18": {
+      "android": "需 `VIBRATE` 权限",
+      "class": "C",
+      "ios": "无需权限",
+      "metric": null,
+      "residual": "Android 独有失败模式",
+      "resolution": "库内声明；缺失时静默降级 + 指标",
+      "status": "verified",
+      "title": "权限",
+      "verify": null
+    },
+    "P-19": {
+      "android": "`uptimeMillis`",
+      "class": "A",
+      "ios": "mach `hostTime`",
+      "metric": null,
+      "residual": "无",
+      "resolution": "抽象层只暴露\"下一帧\"语义，不暴露原始时钟（见 P-02）",
+      "status": "verified",
+      "title": "时钟基准",
+      "verify": "—"
+    },
+    "P-20": {
+      "android": "单 slot，物理上只能一路",
+      "class": "C",
+      "ios": "Core Haptics 可叠加多路，技术上能支持多点",
+      "metric": null,
+      "residual": "iOS 侧牺牲了可用能力；且任一方 `end` 会误杀另一方——这是残差里唯一\"双端都错\"的一条",
+      "resolution": "契约统一降到一路（语义向弱端对齐）：`updateContinuousEffect` 是全局单例通道，第二路覆盖第一路，任一方 `end` 结束整条通道。业务方需自行仲裁多点手势",
+      "status": "verified",
+      "title": "连续通道并发路数（v1.3.2 新增）",
+      "verify": null
+    }
+  },
+  "semantics": {
+    "control.tap": {
+      "category": "ux",
+      "desc": "普通控件轻触（按钮、开关、列表项）",
+      "effect": "default_ui_click",
+      "since": "1.0.0"
+    },
+    "gesture.track": {
+      "category": "ux",
+      "desc": "手势拖拽的连续跟随反馈",
+      "effect": "gesture_continuous",
+      "protected": true,
+      "since": "1.0.0"
+    },
+    "item.detach": {
+      "category": "ux",
+      "desc": "内容被撕下/分离（撕票根、拆分卡片）",
+      "effect": "ticket_rip",
+      "since": "1.0.0"
+    },
+    "item.dissolve": {
+      "category": "ux",
+      "desc": "内容粒子化消失（文本崩解、卡片气化）",
+      "effect": "glitch_dissolve",
+      "since": "1.0.0"
+    },
+    "notify.message": {
+      "category": "alert",
+      "desc": "普通消息/提示到达",
+      "effect": "message_ping",
+      "since": "1.0.0"
+    },
+    "security.intrusion": {
+      "category": "critical",
+      "desc": "检测到防窥入侵（截屏/录屏），惩罚性强警报",
+      "effect": "anti_screenshot",
+      "since": "1.0.0"
+    },
+    "selection.snap": {
+      "category": "ux",
+      "desc": "元素吸附到位（对齐、吸附、咬合）",
+      "effect": "magnetic_snap",
+      "since": "1.0.0"
+    }
+  },
+  "transitions": {
+    "events": [
+      "SUBMIT",
+      "SUBMIT_OK",
+      "NATURAL_END",
+      "UPDATE",
+      "CANCEL",
+      "SUSPEND",
+      "RESUME",
+      "FAIL",
+      "GRACE_EXPIRED",
+      "EXPIRE"
+    ],
+    "states": [
+      "Pending",
+      "Submitting",
+      "Active",
+      "Paused",
+      "Completed",
+      "Cancelled",
+      "Failed",
+      "Reclaimed"
+    ],
+    "transitions": [
+      {
+        "action": "submit",
+        "event": "SUBMIT",
+        "from": "Pending",
+        "to": "Submitting"
+      },
+      {
+        "action": "none",
+        "event": "CANCEL",
+        "from": "Pending",
+        "to": "Cancelled"
+      },
+      {
+        "action": "none",
+        "event": "SUSPEND",
+        "from": "Pending",
+        "to": "Cancelled"
+      },
+      {
+        "action": "startEndTimer",
+        "event": "SUBMIT_OK",
+        "from": "Submitting",
+        "to": "Active",
+        "when": "kind!=continuous"
+      },
+      {
+        "action": "startIdleTimer",
+        "event": "SUBMIT_OK",
+        "from": "Submitting",
+        "to": "Active",
+        "when": "kind=continuous"
+      },
+      {
+        "action": "report",
+        "event": "FAIL",
+        "from": "Submitting",
+        "to": "Failed"
+      },
+      {
+        "action": "stop",
+        "event": "CANCEL",
+        "from": "Submitting",
+        "to": "Cancelled"
+      },
+      {
+        "action": "stop",
+        "event": "SUSPEND",
+        "from": "Submitting",
+        "to": "Cancelled",
+        "when": "kind=continuous"
+      },
+      {
+        "action": "stop",
+        "event": "SUSPEND",
+        "from": "Submitting",
+        "to": "Cancelled",
+        "when": "kind!=continuous && cat!=critical"
+      },
+      {
+        "action": "startKeepAlive",
+        "event": "SUSPEND",
+        "from": "Submitting",
+        "to": "Submitting",
+        "when": "kind!=continuous && cat=critical"
+      },
+      {
+        "action": "clearKeepAlive",
+        "event": "RESUME",
+        "from": "Submitting",
+        "to": "Submitting",
+        "when": "cat=critical"
+      },
+      {
+        "action": "none",
+        "event": "RESUME",
+        "from": "Submitting",
+        "silent": true,
+        "to": "Submitting",
+        "when": "cat!=critical"
+      },
+      {
+        "action": "none",
+        "event": "NATURAL_END",
+        "from": "Active",
+        "to": "Completed",
+        "when": "kind=oneshot"
+      },
+      {
+        "action": "resubmit",
+        "event": "NATURAL_END",
+        "from": "Active",
+        "to": "Submitting",
+        "when": "kind=looping"
+      },
+      {
+        "action": "none",
+        "event": "NATURAL_END",
+        "from": "Active",
+        "to": "Completed",
+        "when": "kind=continuous"
+      },
+      {
+        "action": "applyParams",
+        "event": "UPDATE",
+        "from": "Active",
+        "to": "Active",
+        "when": "kind=continuous"
+      },
+      {
+        "action": "none",
+        "event": "UPDATE",
+        "from": "Active",
+        "illegal": true,
+        "to": "Active",
+        "when": "kind!=continuous"
+      },
+      {
+        "action": "stop",
+        "event": "CANCEL",
+        "from": "Active",
+        "to": "Cancelled"
+      },
+      {
+        "action": "report",
+        "event": "FAIL",
+        "from": "Active",
+        "to": "Failed"
+      },
+      {
+        "action": "stop",
+        "event": "SUSPEND",
+        "from": "Active",
+        "to": "Cancelled",
+        "when": "kind=continuous"
+      },
+      {
+        "action": "suspend",
+        "event": "SUSPEND",
+        "from": "Active",
+        "to": "Paused",
+        "when": "kind!=continuous && cat!=critical"
+      },
+      {
+        "action": "startKeepAlive",
+        "event": "SUSPEND",
+        "from": "Active",
+        "to": "Active",
+        "when": "kind!=continuous && cat=critical"
+      },
+      {
+        "action": "clearKeepAlive",
+        "event": "RESUME",
+        "from": "Active",
+        "to": "Active",
+        "when": "cat=critical"
+      },
+      {
+        "action": "none",
+        "event": "RESUME",
+        "from": "Active",
+        "silent": true,
+        "to": "Active",
+        "when": "cat!=critical"
+      },
+      {
+        "action": "resubmit",
+        "event": "RESUME",
+        "from": "Paused",
+        "to": "Submitting"
+      },
+      {
+        "action": "none",
+        "event": "CANCEL",
+        "from": "Paused",
+        "to": "Cancelled"
+      },
+      {
+        "action": "report",
+        "event": "FAIL",
+        "from": "Paused",
+        "to": "Failed"
+      },
+      {
+        "action": "none",
+        "event": "NATURAL_END",
+        "from": "Paused",
+        "to": "Paused"
+      },
+      {
+        "action": "release",
+        "event": "GRACE_EXPIRED",
+        "from": "Completed",
+        "to": "Reclaimed"
+      },
+      {
+        "action": "release",
+        "event": "GRACE_EXPIRED",
+        "from": "Cancelled",
+        "to": "Reclaimed"
+      },
+      {
+        "action": "release",
+        "event": "EXPIRE",
+        "from": "Failed",
+        "to": "Reclaimed"
+      },
+      {
+        "action": "none",
+        "event": [
+          "CANCEL",
+          "NATURAL_END",
+          "UPDATE",
+          "SUSPEND",
+          "RESUME",
+          "FAIL"
+        ],
+        "from": "Completed",
+        "silent": true,
+        "to": "Completed"
+      },
+      {
+        "action": "none",
+        "event": [
+          "CANCEL",
+          "NATURAL_END",
+          "UPDATE",
+          "SUSPEND",
+          "RESUME",
+          "FAIL"
+        ],
+        "from": "Cancelled",
+        "silent": true,
+        "to": "Cancelled"
+      },
+      {
+        "action": "none",
+        "event": [
+          "CANCEL",
+          "NATURAL_END",
+          "UPDATE",
+          "SUSPEND",
+          "RESUME",
+          "FAIL"
+        ],
+        "from": "Failed",
+        "silent": true,
+        "to": "Failed"
+      },
+      {
+        "action": "none",
+        "event": "*",
+        "from": "Reclaimed",
+        "silent": true,
+        "to": "Reclaimed"
+      }
+    ],
+    "version": 4
+  }
+}

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.cipherlex.haptic.core.FsmInvariantTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-08-02T09:10:17" hostname="DESKTOP-R56G7K6" time="0.721">
+  <properties/>
+  <testcase name="随机事件序列下资源不泄漏()" classname="com.cipherlex.haptic.core.FsmInvariantTest" time="0.715"/>
+  <testcase name="守卫互斥 —— 任何组合都不得命中多条转移()" classname="com.cipherlex.haptic.core.FsmInvariantTest" time="0.002"/>
+  <system-out><![CDATA[FSM fuzz：50000 轮，资源不泄漏 / 终态吸收 全部通过
+守卫互斥：穷举 720 组 (状态×事件×kind×cat) 全部至多命中一条
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
