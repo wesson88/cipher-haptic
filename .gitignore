@@ -9,3 +9,4 @@ build/
 **/build/
 local.properties
 android/local.properties
+reports/
