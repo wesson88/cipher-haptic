@@ -55,6 +55,8 @@ ACT = f"{PKG}/.TuningActivity"
 TAG = "CipherHapticTuner"
 # FLAG_ACTIVITY_SINGLE_TOP —— 不加则 am start 不触发 onNewIntent，命令会被静默吞掉
 SINGLE_TOP = "0x20000000"
+# 与 V3Service.BURST_GAP_MS 一致 —— 串内设计间隔，也就是 V3 的观测基准
+BURST_GAP_MS = 800
 
 
 class Adb:
@@ -294,62 +296,98 @@ def _intervals_ms(stamps: list[str]) -> list[int]:
     return [b - a for a, b in zip(v, v[1:])]
 
 
-def test_v3(adb: Adb, spec: Spec, secs: int, screen_off: bool) -> dict:
+PLAY_RE = re.compile(r"V3SVC play r=(\d+) i=(\d+) at=(\d+)")
+
+
+def _burst_intervals(adb: Adb, gap_ms: int) -> list[int]:
+    """从 logcat 提取同一轮 burst 内相邻播放的实际间隔。"""
+    rows = []
+    for l in adb.logcat_lines():
+        m = PLAY_RE.search(l)
+        if m:
+            rows.append((int(m.group(1)), int(m.group(2)), int(m.group(3))))
+    out = []
+    for (r1, i1, t1), (r2, i2, t2) in zip(rows, rows[1:]):
+        # 只比同一轮内相邻序号 —— 跨轮的间隔由闹钟决定，不是观测量
+        if r1 == r2 and i2 == i1 + 1 and 0 < t2 - t1 < gap_ms * 20:
+            out.append(t2 - t1)
+    return out
+
+
+def _stats(iv: list[int], design: int) -> dict:
+    if not iv:
+        return {"n": 0}
+    v = sorted(iv)
+    dev = sorted(x - design for x in iv)
+    return {
+        "n": len(v),
+        "p50": v[len(v) // 2],
+        "p95": v[min(len(v) - 1, int(len(v) * 0.95))],
+        "max": v[-1],
+        "dev_p50": dev[len(dev) // 2],
+        "over2x": sum(1 for x in v if x > design * 2),
+    }
+
+
+def test_v3(adb: Adb, rounds: int, burst: int, cells: list[str]) -> dict:
     """
-    V3 · wake lock 有效性（P-10）。
+    V3 - wake lock 有效性（P-10）。**前台服务 + AlarmManager**。
 
-    ## 观测量为什么是"间隔偏差"而不是"振动完成率"
+    ## 三条被 ROM 挡掉的路，与最终选择
 
-    2026-08-02 取证：调 `vibrate()` 时**系统会自行持有 `*vibrator*` partial wake lock**，
-    已提交的振动不会被 CPU 睡眠打断 —— 原问题的一半基本可以否掉。
+    | 触发方式 | 结果 |
+    |---|---|
+    | Activity + `am start` | **会点亮屏幕** —— 一发命令前提条件就没了 |
+    | BroadcastReceiver | **ColorOS 冻结后台应用的广播投递** |
+    | **前台服务** | 熄屏后继续跑（与"来电"同级，ROM 一般不冻） |
 
-    剩下的真问题是**两次提交之间的调度间隙**：`looping` 靠我们自己的 `end-timer`
-    触发 `resubmit`，那个定时器要 CPU 醒着才准时；系统的锁覆盖不到间隙。
+    ## 观测量的隔离
 
-    而间隔可以**直接从 `dumpsys` 的时间戳算出来** —— 不需要加速度计。这既是更准的
-    问题，也是更便宜的测法。
+    闹钟**只负责把 CPU 叫醒**；唤醒后由**库自己的 scheduler** 连排一串播放，
+    测那一串的间隔。首版让闹钟直接驱动每轮播放，实测 5019ms vs 设计 2000ms ——
+    那是 `setExactAndAllowWhileIdle` 被限流，**不是我们的调度慢**。
 
-    ## 对照组
+    ## Doze 怎么进（USB 连着也能进）
 
-    `wakelock on` vs `off`（后者走 `NoWakeLock`）。**没有对照组这项得不出结论** ——
-    只测"持锁通过"证明不了锁有用，可能它本来就不需要。
+    `dumpsys battery unplug` 伪装成拔了充电器，再 `deviceidle force-idle`。
+    否则 USB 供电会一直把设备摁在 active，Doze 那一格永远测不到。
     """
-    rw = spec.resolve("security.alarm", "LINEAR_X_FULL")
-    design = rw.totalDurationMs if rw else 0
-    out: dict = {"design_interval_ms": design, "screen_off": screen_off, "groups": {}}
+    design = BURST_GAP_MS
+    out: dict = {"design_gap_ms": design, "rounds": rounds, "burst": burst, "cells": {}}
 
-    for mode in ("on", "off"):
-        if screen_off:
-            adb.shell("input keyevent 26")           # 熄屏
-            time.sleep(1.5)
-            # 确认真的灭了；亮着就说明这一格无效，必须记下来而不是当成有效数据
-            out.setdefault("screen_state", []).append(
-                "off" if "mScreenOn=false" in adb.shell("dumpsys power | grep -i mScreenOn")
-                or "Display Power: state=OFF" in adb.shell("dumpsys power | grep 'Display Power'")
-                else "UNKNOWN/ON")
-        mark = device_now(adb)
-        # ⚠️ 必须【显式指定组件】：Android 8+ 起 manifest 注册的接收器收不到隐式广播，
-        #    用 `-a <action>` 会静默失败（am 照样回 result=0，接收器却从没跑过）。
-        #    再加 FLAG_INCLUDE_STOPPED_PACKAGES，否则被 force-stop 过的包收不到。
-        adb.shell(f'am broadcast -f 0x01000000 -n {PKG}/.V3Receiver '
-                  f'--es wakelock {mode} --es secs {secs}')
-        time.sleep(secs + 3)
-        adb.shell(f'am broadcast -f 0x01000000 -n {PKG}/.V3Receiver --es stop 1')
-        time.sleep(1)
+    for cell in cells:
+        out["cells"][cell] = {}
+        for mode in ("on", "off"):
+            adb.shell("am force-stop " + PKG)
+            time.sleep(1)
+            adb.run("logcat", "-c")
+            adb.shell("am start -n " + ACT)
+            time.sleep(2)
+            adb.shell("am start-foreground-service -n %s/.V3Service "
+                      "--es wakelock %s --es rounds %d --es burst %d"
+                      % (PKG, mode, rounds, burst))
+            time.sleep(1)
 
-        stamps = _submission_times(adb, mark)
-        iv = _intervals_ms(stamps)
-        # 只统计"应当等于设计间隔"的那些；掉出 3 倍以上的算延迟事件
-        dev = [x - design for x in iv] if design else []
-        out["groups"][mode] = {
-            "submissions": len(stamps),
-            "intervals": iv[:40],
-            "deviation_p50": sorted(dev)[len(dev) // 2] if dev else None,
-            "deviation_max": max(dev) if dev else None,
-            "delayed_over_2x": sum(1 for x in iv if design and x > design * 2),
-        }
-    if screen_off:
-        adb.shell("input keyevent 26")               # 复位
+            if cell in ("screen_off", "doze"):
+                adb.shell("input keyevent 26")
+                time.sleep(1.5)
+            if cell == "doze":
+                adb.shell("dumpsys battery unplug")
+                adb.shell("dumpsys deviceidle force-idle")
+                time.sleep(1)
+
+            time.sleep(rounds * (burst * design / 1000.0 + 11) + 3)
+
+            iv = _burst_intervals(adb, design)
+            out["cells"][cell][mode] = _stats(iv, design)
+
+            if cell == "doze":
+                adb.shell("dumpsys deviceidle unforce")
+                adb.shell("dumpsys battery reset")
+            adb.shell("am start-foreground-service -n %s/.V3Service --es cmd stop" % PKG)
+            if cell in ("screen_off", "doze"):
+                adb.shell("input keyevent 26")
+            time.sleep(1)
     return out
 
 
@@ -453,24 +491,40 @@ def render(dev: dict, res: dict) -> str:
     if "v3" in res:
         v = res["v3"]
         a("")
-        a("## V3 · wake lock 有效性（P-10）")
+        a("## V3 - wake lock 有效性（P-10）")
         a("")
-        a(f"- 屏幕：{'熄灭' if v['screen_off'] else '点亮（基线）'}"
-          + (f"  实测 `{v.get('screen_state')}`" if v.get("screen_state") else ""))
-        a(f"- 设计循环间隔：**{v['design_interval_ms']}ms**")
+        a("- 串内设计间隔 **%dms**；每格 %d 轮 x %d 次"
+          % (v["design_gap_ms"], v["rounds"], v["burst"]))
+        a("- 闹钟只负责唤醒 CPU，**观测量是库自己 scheduler 排出的那一串**")
         a("")
-        a("| wake lock | 提交次数 | 间隔偏差 p50 | 最大偏差 | 超 2 倍设计值 |")
-        a("|---|---|---|---|---|")
-        for mode in ("on", "off"):
-            g = v["groups"].get(mode, {})
-            a(f"| **{mode.upper()}** | {g.get('submissions')} | {g.get('deviation_p50')}ms "
-              f"| {g.get('deviation_max')}ms | {g.get('delayed_over_2x')} |")
+        a("| 场景 | wake lock | n | p50 | p95 | 最大 | 偏差 p50 | 超 2 倍 |")
+        a("|---|---|---|---|---|---|---|---|")
+        for cell, g in v["cells"].items():
+            for mode in ("on", "off"):
+                d = g.get(mode, {})
+                if not d.get("n"):
+                    a("| %s | %s | **0** | - | - | - | - | - |" % (cell, mode.upper()))
+                    continue
+                a("| %s | **%s** | %d | %dms | %dms | %dms | %+dms | %d |"
+                  % (cell, mode.upper(), d["n"], d["p50"], d["p95"], d["max"],
+                     d["dev_p50"], d["over2x"]))
         a("")
-        a("> **判据**（P0 计划 §4.6）：任一格中两组差值 ≥20 个百分点 → 有效；所有格 <5 → 无效，")
-        a("> **直接删掉 AndroidWakeLock 与 WAKE_LOCK 权限**，不留装饰性代码。")
+        for cell, g in v["cells"].items():
+            on, off = g.get("on", {}), g.get("off", {})
+            if not on.get("n") or not off.get("n"):
+                a("- `%s`：样本不足，无结论" % cell)
+                continue
+            diff = abs(on["dev_p50"] - off["dev_p50"])
+            rel = diff * 100.0 / max(1, v["design_gap_ms"])
+            tag = "**有效**" if rel >= 20 else ("无效" if rel < 5 else "灰区")
+            a("- `%s`：两组偏差 p50 相差 %dms（%.1f%%）-> %s" % (cell, diff, rel, tag))
+        a("")
+        a("> **判据**（P0 计划 4.6）：任一格 >=20 个百分点 -> 有效；**所有格 <5 -> 无效，")
+        a("> 直接删掉 `AndroidWakeLock` 与 `WAKE_LOCK` 权限**，不留装饰性代码。")
         a(">")
-        a("> ⚠️ **亮屏组只是基线**，不构成结论 —— CPU 本来就醒着，两组必然没差别。")
-        a("> 真正的判据来自**熄屏 + Doze**（`--v3-screen-off`，Doze 还需无线调试并拔掉 USB）。")
+        a("> 注意 `screen_on` 只是基线 —— CPU 本来就醒着，两组必然没差别。真正的判据在")
+        a("> `screen_off` 与 `doze`。`doze` 格用 `dumpsys battery unplug` 伪装拔电，")
+        a("> 否则 USB 供电会把设备一直摁在 active。")
 
     if "monkey" in res:
         m = res["monkey"]
@@ -498,9 +552,10 @@ def main() -> int:
     ap.add_argument("--v5-samples", type=int, default=20)
     ap.add_argument("--stress-ops", type=int, default=500)
     ap.add_argument("--monkey", type=int, default=20000)
-    ap.add_argument("--v3-secs", type=int, default=20)
-    ap.add_argument("--v3-screen-off", action="store_true",
-                    help="熄屏下跑 V3（默认亮屏，作为基线对照）")
+    ap.add_argument("--v3-rounds", type=int, default=8)
+    ap.add_argument("--v3-burst", type=int, default=6,
+                    help="每次唤醒连排几次播放 —— 这一串的间隔才是观测量")
+    ap.add_argument("--v3-cells", default="screen_on,screen_off,doze")
     ap.add_argument("--out", default=os.path.join(ROOT, "reports"))
     args = ap.parse_args()
 
@@ -547,9 +602,11 @@ def main() -> int:
         print(f"[devicetest] 压测（{args.stress_ops} 次）…")
         res["stress"] = test_stress(adb, args.stress_ops)
     if "v3" in only:
-        state = "熄屏" if args.v3_screen_off else "亮屏"
-        print(f"[devicetest] V3 wake lock（{state}，每组 {args.v3_secs}s）…")
-        res["v3"] = test_v3(adb, spec, args.v3_secs, args.v3_screen_off)
+        cells = [c.strip() for c in args.v3_cells.split(",") if c.strip()]
+        mins = len(cells) * 2 * args.v3_rounds * 12 // 60
+        print(f"[devicetest] V3 wake lock（格 {cells}，{args.v3_rounds} 轮 x "
+              f"{args.v3_burst} 次，预计 {mins} 分钟）…")
+        res["v3"] = test_v3(adb, args.v3_rounds, args.v3_burst, cells)
     if "monkey" in only:
         print(f"[devicetest] monkey（{args.monkey} 事件，可能数分钟）…")
         res["monkey"] = test_monkey(adb, args.monkey)

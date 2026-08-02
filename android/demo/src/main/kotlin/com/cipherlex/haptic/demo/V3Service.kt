@@ -54,6 +54,7 @@ class V3Service : Service() {
     private var token: CipherHapticCancelToken? = null
     private var holdWakeLock = true
     private var roundsLeft = 0
+    private var burstPerRound = BURST_PER_ROUND
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -67,6 +68,9 @@ class V3Service : Service() {
 
         holdWakeLock = intent?.getStringExtra("wakelock") != "off"
         roundsLeft = intent?.getStringExtra("rounds")?.toIntOrNull() ?: 20
+        // Doze 下 setExactAndAllowWhileIdle 被限流到约 9 分钟一次，靠多轮闹钟采样不现实。
+        // 故支持"少轮次 + 长串"：一次唤醒内连排很多次，直接测 CPU 会不会在其间睡去。
+        burstPerRound = intent?.getStringExtra("burst")?.toIntOrNull() ?: BURST_PER_ROUND
         val h = CipherHaptic.create(
             applicationContext,
             wakeLockOverride = if (holdWakeLock) null else NoWakeLock,
@@ -99,7 +103,7 @@ class V3Service : Service() {
         // 现在改为：闹钟唤醒后，用【库自己的 scheduler】连排一串播放，测那串的间隔。
         // 于是"CPU 睡了导致我们的定时器被推迟"这个变量才被隔离出来 —— 这正是 wake lock
         // 声称要防的东西。
-        val burst = BURST_PER_ROUND
+        val burst = burstPerRound
         val gap = BURST_GAP_MS
         for (i in 0 until burst) {
             android.os.Handler(mainLooper).postDelayed({
