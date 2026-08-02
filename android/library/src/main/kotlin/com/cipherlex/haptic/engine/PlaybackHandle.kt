@@ -36,6 +36,7 @@ class PlaybackHandle(
     private val gateway: VibratorGateway,
     private val wakeLock: WakeLockGateway,
     private val useComposition: Boolean,
+    private val maxLoopMs: Long = 300_000L,
     private val probe: LatencyProbe = LatencyProbe.NOOP,
     private val metrics: MetricsCollector? = null,
     private val onLog: (String) -> Unit = {},
@@ -53,6 +54,7 @@ class PlaybackHandle(
     private var idleTimer: HapticScheduler.Cancellable? = null
     private var keepAliveTimer: HapticScheduler.Cancellable? = null
     private var graceTimer: HapticScheduler.Cancellable? = null
+    private var loopDeadline: HapticScheduler.Cancellable? = null
     private var wakeLockHeld = false
 
     /** 供抢占策略读取（§8.2 `activeSnapshot`）。 */
@@ -173,6 +175,14 @@ class PlaybackHandle(
         endTimer = scheduler.schedule(resolved.totalDurationMs.toLong()) {
             fsm.send("NATURAL_END")
         }
+        // looping 的绝对上限：只排一次，不随每轮 resubmit 重置 —— 它拦的是
+        // "业务方忘了 cancel"，而不是单轮时长（见 CipherHaptic.MAX_LOOP_DURATION_MS）
+        if (resolved.kind == WaveKind.LOOPING && loopDeadline == null) {
+            loopDeadline = scheduler.schedule(maxLoopMs) {
+                onLog("looping 到达绝对上限 ${maxLoopMs}ms，强制结束 —— 业务方可能忘了 cancel")
+                fsm.send("CANCEL")
+            }
+        }
     }
 
     private fun startIdleTimer() {
@@ -214,6 +224,7 @@ class PlaybackHandle(
     private fun cancelEveryTimer() {
         cancelAllTimers()
         graceTimer?.cancel(); graceTimer = null
+        loopDeadline?.cancel(); loopDeadline = null
     }
 
     // ── wake lock ───────────────────────────────────────────────────
@@ -242,7 +253,7 @@ class PlaybackHandle(
     /** 测试断言用：是否还持有任何资源。 */
     fun anyResourceHeld(): Boolean =
         wakeLockHeld || endTimer != null || idleTimer != null ||
-            keepAliveTimer != null || graceTimer != null
+            keepAliveTimer != null || graceTimer != null || loopDeadline != null
 
     companion object {
         /**

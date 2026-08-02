@@ -60,6 +60,13 @@ semantics:
     since: "1.0.0"
 
   # ── 安全 ─────────────────────────────────────────────────
+  security.alarm:
+    effect: security_alarm_loop
+    category: critical
+    desc: "持续安全告警（需业务方显式取消），如解密失败锁定"
+    protected: true          # 告警不被普通效果打断
+    since: "1.0.0"
+
   security.intrusion:
     effect: anti_screenshot
     category: critical

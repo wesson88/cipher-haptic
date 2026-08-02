@@ -21,7 +21,11 @@ class ResourceEmbedTest {
     fun `内嵌资源可加载且内容完整`() {
         val loader = SpecLoader.fromResources()
 
-        assertEquals(7, loader.semanticIds.size, "语义 token 数")
+        // ⚠️ 不写死数字 —— 每加一个语义 token 就要改测试是没必要的摩擦，
+        //    而且写死的数字一旦忘改就变成"测试挡着不让加功能"。
+        //    真正要验的是【内嵌的那份】与【仓库里的那份】一致，即资源没被截断/拷错。
+        val fromRepo = SpecLoader(SpecPaths.runtimeJson()).semanticIds
+        assertEquals(fromRepo, loader.semanticIds, "内嵌资源的语义集合应与仓库 spec 一致")
         assertTrue("item.dissolve" in loader.semanticIds)
 
         // 三层数据都要真的能读出来，不能只是 JSON 解析成功

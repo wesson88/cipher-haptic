@@ -46,6 +46,7 @@ enum class CipherHapticSemantic(val id: String) {
     CONTROL_TAP("control.tap"),
     GESTURE_TRACK("gesture.track"),
     NOTIFY_MESSAGE("notify.message"),
+    SECURITY_ALARM("security.alarm"),
     SECURITY_INTRUSION("security.intrusion"),
 }
 
@@ -149,7 +150,10 @@ class CipherHaptic internal constructor(
 
     fun playLoopingEffect(semantic: CipherHapticSemantic): CipherHapticCancelToken {
         val token = HandleToken()
-        scheduler.submit { startPlayback(semantic)?.let { token.bind(it) } ?: token.markFinished() }
+        scheduler.submit {
+            startPlayback(semantic, viaLoopingApi = true)
+                ?.let { token.bind(it) } ?: token.markFinished()
+        }
         return token
     }
 
@@ -246,6 +250,7 @@ class CipherHaptic internal constructor(
     private fun startPlayback(
         semantic: CipherHapticSemantic,
         preSubmit: (PlaybackHandle) -> Unit = {},
+        viaLoopingApi: Boolean = false,
     ): PlaybackHandle? {
         val t0 = System.nanoTime()
         metrics.onRequest()
@@ -266,6 +271,17 @@ class CipherHaptic internal constructor(
         rw.degradeTrace.firstOrNull()?.takeIf { it != "full" }?.let {
             metrics.onDegrade(it)
             debugDelegate?.onDegraded(semantic.id, it)
+        }
+
+        // ── 安全闸：无停止途径的无限循环，宁可不播 ──────────────────
+        // ⚠️ `playEffect` 不返回 token，而 kind=looping 的效果在平台侧是【无限循环】
+        //    （repeat=0）。两者相遇 = 手机一直震，业务方拿不到任何停止手段，
+        //    终端用户只能去设置里强停应用。
+        //    2026-08-02 真机上真实发生过一次 —— 这不是理论风险。
+        //    正确用法是 playLoopingEffect（返回 CancelToken）。此处拒绝而非静默播一次：
+        //    播一次会掩盖误用，而 drop 会进指标与 debugDelegate，是可见的。
+        if (rw.kind == WaveKind.LOOPING && !viaLoopingApi) {
+            return drop(semantic, "looping-needs-token")
         }
 
         // ⑥ preempt —— 纯逻辑算目标，执行是发 CANCEL（§8.2）
@@ -289,8 +305,11 @@ class CipherHaptic internal constructor(
 
         // ⑦ submit —— handle 创建 + 平台提交在同一 critical section 内（§七.3）
         val useComposition = probe.canUseComposition(intArrayOf(PRIMITIVE_CLICK))
-        val h = PlaybackHandle(nextId.getAndIncrement(), rw, scheduler, gateway, wakeLock,
-                               useComposition, probe2, metrics) {
+        val h = PlaybackHandle(
+            id = nextId.getAndIncrement(), resolved = rw, scheduler = scheduler,
+            gateway = gateway, wakeLock = wakeLock, useComposition = useComposition,
+            maxLoopMs = MAX_LOOP_DURATION_MS, probe = probe2, metrics = metrics,
+        ) {
             debugDelegate?.onStateChanged(it)
         }
         // ⚠️ 回收必须是【推送式】：Reclaimed 由 grace 定时器驱动，而 sweep() 是拉取式的
@@ -441,5 +460,16 @@ class CipherHaptic internal constructor(
 
         /** ⚠️ **待实测**（性能 §5.4）。 */
         const val DEFAULT_COALESCE_WINDOW_MS = 100L
+
+        /**
+         * 循环效果的**绝对上限**，到期强制结束。
+         *
+         * ⚠️ **这条是 2026-08-02 真机事故之后补的**：`continuous` 有 `idleTimeoutMs`
+         * 兜底（业务方忘了 `end` 也不会一直震），而 `looping` **什么兜底都没有** ——
+         * 只要没人 `cancel`，它就永远震下去。两者的泄漏风险是同构的，防线却只有一半。
+         *
+         * 5 分钟远超任何合理的触觉告警时长；它拦的不是正常用法，是**忘记取消**。
+         */
+        const val MAX_LOOP_DURATION_MS = 300_000L
     }
 }

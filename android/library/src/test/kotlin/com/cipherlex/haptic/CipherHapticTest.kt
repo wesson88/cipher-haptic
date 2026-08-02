@@ -282,6 +282,41 @@ class CipherHapticTest {
     }
 
     @Test
+    fun `playEffect 拒绝 looping 效果 —— 它拿不到停止手段`() {
+        // ⚠️ 2026-08-02 真机上真实发生过：playEffect 不返回 token，而 kind=looping 在
+        //    平台侧是无限循环（repeat=0），于是手机一直震，终端用户只能去设置里强停应用。
+        //    正确用法是 playLoopingEffect。此处拒绝而非静默播一次 —— 播一次会掩盖误用。
+        val (h, gw) = build()
+        val d = RecordingDelegate().also { h.debugDelegate = it }
+        h.playEffect(CipherHapticSemantic.SECURITY_ALARM)
+        assertTrue(gw.waveformCalls.isEmpty(), "★ 不得让无停止途径的无限循环跑起来")
+        assertEquals("looping-needs-token", d.drops.single().second)
+    }
+
+    @Test
+    fun `playLoopingEffect 可以播 looping,且能被 token 停掉`() {
+        val (h, gw, sched) = build()
+        val token = h.playLoopingEffect(CipherHapticSemantic.SECURITY_ALARM)
+        assertTrue(gw.waveformCalls.isNotEmpty(), "正确路径应当能播")
+        token.cancel()
+        sched.advance(1_000)
+        assertEquals(CipherHapticEngineState.IDLE, h.engineState())
+    }
+
+    @Test
+    fun `looping 有绝对上限 —— 业务方忘了 cancel 也会自行结束`() {
+        // continuous 有 idleTimeoutMs 兜底，而 looping 此前【什么兜底都没有】：
+        // 只要没人 cancel 就永远震下去。两者的泄漏风险同构，防线却只有一半。
+        val (h, _, sched) = build()
+        h.playLoopingEffect(CipherHapticSemantic.SECURITY_ALARM)
+        assertEquals(CipherHapticEngineState.RUNNING, h.engineState())
+
+        sched.advance(CipherHaptic.MAX_LOOP_DURATION_MS + 1_000)
+        assertEquals(CipherHapticEngineState.IDLE, h.engineState(),
+                     "★ 到达绝对上限后必须强制结束，不能无限震下去")
+    }
+
+    @Test
     fun `观察者可注销 —— 否则必然泄漏`() {
         val (h, _) = build()
         val obs = object : MuteStateObserver {

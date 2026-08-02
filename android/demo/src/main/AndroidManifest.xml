@@ -18,5 +18,15 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- V3：熄屏 / Doze 下的触发器。Activity 在熄屏时 onStop，而 am start 又会
+             点亮屏幕 —— 于是"熄屏下的表现"永远测不到。Receiver 没有这个问题。 -->
+        <receiver
+            android:name=".V3Receiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.cipherlex.haptic.demo.V3" />
+            </intent-filter>
+        </receiver>
     </application>
 </manifest>

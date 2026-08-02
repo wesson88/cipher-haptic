@@ -98,6 +98,19 @@ effects:
           timings_ms: [15]
           amplitudes: [128]
 
+  security_alarm_loop:              # 持续告警循环（playLoopingEffect 的载体）
+    kind: looping                   # ★ 全库唯一的 looping 实例,见下方说明
+    loop_gap_ms: 400                # 每轮之间的静默间隔 —— 告警要"一声一声"而不是连成一片
+    ios_core_haptics:
+      events:                                                                  # t= 0 / 90
+        - { type: hapticTransient, time_ms: 0,  duration_ms: 30, intensity: 1.00, sharpness: 0.90 }
+        - { type: hapticTransient, time_ms: 90, duration_ms: 30, intensity: 1.00, sharpness: 0.90 }
+    android:
+      min_api: 29
+      waveform:                                                                # t= 0 / 90 ✓
+        timings_ms: [30, 60, 30]
+        amplitudes: [255, 0, 255]
+
   gesture_continuous:               # 连续手势通道（updateContinuousEffect 的载体，非 one-shot）
     kind: continuous                # 生命周期由 update/end 驱动，无固定 duration
     category: ux

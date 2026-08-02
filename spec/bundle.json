@@ -76,6 +76,20 @@
         "amplitude_scale": 0.5
       }
     },
+    "security_alarm_loop": {
+      "ERM_Z": {
+        "action": "forced_amplitude",
+        "duration_ms": 200
+      },
+      "LINEAR_X_FULL": {
+        "action": "full"
+      },
+      "LINEAR_X_LIMITED": {
+        "action": "n_pulses",
+        "count": 2,
+        "interval_ms": 120
+      }
+    },
     "ticket_rip": {
       "ERM_Z": {
         "action": "forced_amplitude",
@@ -357,6 +371,43 @@
           }
         ]
       }
+    },
+    "security_alarm_loop": {
+      "android": {
+        "min_api": 29,
+        "waveform": {
+          "amplitudes": [
+            255,
+            0,
+            255
+          ],
+          "timings_ms": [
+            30,
+            60,
+            30
+          ]
+        }
+      },
+      "ios_core_haptics": {
+        "events": [
+          {
+            "duration_ms": 30,
+            "intensity": 1.0,
+            "sharpness": 0.9,
+            "time_ms": 0,
+            "type": "hapticTransient"
+          },
+          {
+            "duration_ms": 30,
+            "intensity": 1.0,
+            "sharpness": 0.9,
+            "time_ms": 90,
+            "type": "hapticTransient"
+          }
+        ]
+      },
+      "kind": "looping",
+      "loop_gap_ms": 400
     },
     "ticket_rip": {
       "android": {
@@ -656,6 +707,13 @@
       "category": "alert",
       "desc": "普通消息/提示到达",
       "effect": "message_ping",
+      "since": "1.0.0"
+    },
+    "security.alarm": {
+      "category": "critical",
+      "desc": "持续安全告警（需业务方显式取消），如解密失败锁定",
+      "effect": "security_alarm_loop",
+      "protected": true,
       "since": "1.0.0"
     },
     "security.intrusion": {

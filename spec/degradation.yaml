@@ -38,6 +38,11 @@ degradation:
     LINEAR_X_LIMITED:   { action: full }                      # 有振幅控制,普通点击可完整播放
     LINEAR_X_FULL:      { action: full }
 
+  security_alarm_loop:
+    ERM_Z:              { action: forced_amplitude, duration_ms: 200 }  # critical 保底
+    LINEAR_X_LIMITED:   { action: n_pulses, count: 2, interval_ms: 120 }
+    LINEAR_X_FULL:      { action: full }
+
   gesture_continuous:
     ERM_Z:              { action: silent }                    # ERM 无振幅控制,无法表达连续强度变化
     LINEAR_X_LIMITED:   { action: amplitude_only }            # 仅 intensity 映射振幅,丢弃 sharpness
