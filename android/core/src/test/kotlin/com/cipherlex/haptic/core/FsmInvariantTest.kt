@@ -1,6 +1,5 @@
 package com.cipherlex.haptic.core
 
-import java.io.File
 import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -18,10 +17,7 @@ import kotlin.test.assertTrue
  */
 class FsmInvariantTest {
 
-    private val loader = SpecLoader(
-        File(File(System.getProperty("user.dir")).parentFile.parentFile, "spec/runtime.min.json")
-            .readText()
-    )
+    private val loader = SpecLoader(SpecPaths.runtimeJson())
     private val table = TransitionTable.from(loader.transitions)
 
     /** 模拟 PlaybackActions 持有的资源。 */

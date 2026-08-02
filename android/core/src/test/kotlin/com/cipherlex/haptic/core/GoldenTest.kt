@@ -2,7 +2,6 @@ package com.cipherlex.haptic.core
 
 import org.json.JSONArray
 import org.json.JSONObject
-import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -20,16 +19,11 @@ import kotlin.test.fail
  */
 class GoldenTest {
 
-    private val repoRoot = File(System.getProperty("user.dir")).parentFile.parentFile
-    private val runtime = File(repoRoot, "spec/runtime.min.json")
-    private val golden = File(repoRoot, "spec/golden.json")
-
-    private val loader by lazy { SpecLoader(runtime.readText()) }
+    private val loader by lazy { SpecLoader(SpecPaths.runtimeJson()) }
 
     @Test
     fun `golden 用例逐字段等价`() {
-        assertTrue(golden.exists(), "缺 spec/golden.json —— 先跑 python tools/golden.py")
-        val cases = JSONObject(golden.readText()).getJSONArray("cases")
+        val cases = JSONObject(SpecPaths.goldenJson()).getJSONArray("cases")
         assertTrue(cases.length() > 0, "golden 用例为空")
 
         var checked = 0
@@ -103,7 +97,7 @@ class GoldenTest {
     @Test
     fun `Android 波形数组由 IR 生成而非手写`() {
         // 「这段 12 行代码就是"双端时序永不错位"的全部保证」（IR 文档 §四.2）
-        val cases = JSONObject(golden.readText()).getJSONArray("cases")
+        val cases = JSONObject(SpecPaths.goldenJson()).getJSONArray("cases")
         var n = 0
         for (i in 0 until cases.length()) {
             val c = cases.getJSONObject(i)
