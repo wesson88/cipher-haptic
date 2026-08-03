@@ -160,6 +160,32 @@ def device_now(adb: Adb) -> str:
 
 # ── 各测试项 ────────────────────────────────────────────────────────
 
+# ── 夹具自检 ────────────────────────────────────────────────────────
+#
+# 三条规矩，缺一条这套机制就退化成装饰：
+#
+# ① **预期写死在代码里，先于数据。** 从数据反推出来的「预期」不是检查。
+# ② **自检失败 = 整段数据作废**，不是警告 —— 报告里不许出现该段结论。
+# ③ **每条自检必须写明它会怎么失败。** 永远不可能失败的断言比没有更糟：
+#    它提供的是假信心。
+#
+# 为什么需要它：2026-08-03 的 V3 跑了 27 分钟，`screen_on` 基线四个样本全是 `None`
+# （夹具没能维持亮屏，屏幕自动超时熄灭了），脚本却照样把 screen_off / doze 的
+# 「结论」写进了报告。基线的作用本该是「证明夹具没坏」—— 它自己坏了，没人发现。
+
+
+def selfcheck(name: str, ok: bool, expect: str, got: str,
+              why: str, how_it_fails: str) -> dict:
+    """
+    构造一条夹具自检。
+
+    :param expect:       **写死的**预期，不许从本次数据推导
+    :param how_it_fails: 它会以什么方式失败 —— 写不出来的，说明这条断言是装饰
+    """
+    return {"name": name, "ok": bool(ok), "expect": expect, "got": got,
+            "why": why, "how_it_fails": how_it_fails}
+
+
 def collect_device(adb: Adb) -> dict:
     info = {
         "model": adb.prop("ro.product.model"),
@@ -186,6 +212,18 @@ def test_v4(adb: Adb) -> dict:
         m = re.search(r"V4 (\w+)=(\S+)", line)
         if m:
             out[m.group(1)] = m.group(2)
+
+    hv = out.get("hasVibrator", "?")
+    out["_selfcheck"] = selfcheck(
+        "V4 · 设备确实有马达",
+        ok=(hv == "true"),
+        expect="hasVibrator=true",
+        got=f"hasVibrator={hv}（共采到 {len(out) - 1} 项）",
+        why="所有硬件档判定都建立在「这台机器有振动器」之上。若为 false，"
+            "supportedPrimitives / frequencyProfile 全部无意义，"
+            "却仍会以合法值的形式出现在报告里。",
+        how_it_fails="跑在模拟器或无马达设备上；或 dump 根本没打出来（采到 0 项）。",
+    )
     return out
 
 
@@ -233,6 +271,19 @@ def test_waveform_fidelity(adb: Adb, spec: Spec) -> list[dict]:
                 drift = [g - w for g, w in zip(got_starts, want_starts)]
                 row["verdict"] = f"起点漂移 {drift}"
         rows.append(row)
+
+    silent = [r["semantic"] for r in rows if not r["raw"]]
+    rows.append({"_selfcheck": selfcheck(
+        "waveform · 每个提交都能回读到记录",
+        ok=(len(rows) > 0 and not silent),
+        expect="逐效果提交后，dumpsys 中都能找到本次的振动记录",
+        got=f"共 {len(rows)} 个效果，回读不到记录的：{silent or '无'}",
+        why="回读为空时无法区分「设备没振」与「我们没解析对」。"
+            "dumpsys vibrator_manager 的历史【不按时间排在末尾】，曾因此误判过；"
+            "一旦时间对齐或包名过滤失效，全表会静默变成「没有漂移」。",
+        how_it_fails="时间戳对齐错位、包名过滤失效、播放被系统拦截、"
+                     "或等待时长不够 dumpsys 落账。",
+    )})
     return rows
 
 
@@ -248,8 +299,26 @@ def test_v5(adb: Adb, samples: int) -> dict:
         time.sleep(0.7)
     adb.start("--es dump 1")
     time.sleep(2)
-    return {"lines": [l.split(f"{TAG}: ")[-1] for l in adb.logcat_lines()
-                      if " V5 " in l]}
+    lines = [l.split(f"{TAG}: ")[-1] for l in adb.logcat_lines() if " V5 " in l]
+    n = 0
+    p50 = 0.0
+    for l in lines:
+        m = re.search(r"n=(\d+)", l)
+        if m:
+            n = max(n, int(m.group(1)))
+        m = re.search(r"p50=([\d.]+)", l)
+        if m:
+            p50 = max(p50, float(m.group(1)))
+    return {"lines": lines, "_selfcheck": selfcheck(
+        "V5 · 采样跑满且时钟在走",
+        ok=(n >= samples and p50 > 0.0),
+        expect=f"样本数 >= {samples} 且 p50 > 0",
+        got=f"n={n} p50={p50}",
+        why="n 不足说明播放没真的发生（夹具没驱动到）；p50 恰好为 0 说明"
+            "计时器没走 —— 两者都会以「延迟极低」的形式出现，看起来像好消息。",
+        how_it_fails="Activity 没起来、语义名写错、埋点被改名，"
+                     "或 T0/T1 取到了同一个时刻。",
+    )}
 
 
 def test_stress(adb: Adb, ops: int) -> dict:
@@ -264,12 +333,27 @@ def test_stress(adb: Adb, ops: int) -> dict:
     adb.start("--es dump 1")
     time.sleep(2)
     lines = adb.logcat_lines()
+    metrics = [l.split(f"{TAG}: ")[-1] for l in lines if "METRICS" in l]
+    req = 0
+    for l in metrics:
+        m = re.search(r"请求\s*(\d+)", l)
+        if m:
+            req = max(req, int(m.group(1)))
     return {
         "violations": [l.split(f"{TAG}: ")[-1] for l in lines
                        if "违规" in l or l.strip().endswith("· 活跃 handle 未归零")
                        or " · " in l],
-        "metrics": [l.split(f"{TAG}: ")[-1] for l in lines if "METRICS" in l],
+        "metrics": metrics,
         "states": [l.split(f"{TAG}: ")[-1] for l in lines if "STATES" in l],
+        "_selfcheck": selfcheck(
+            "stress · 压测真的被驱动了",
+            ok=(req >= ops),
+            expect=f"指标中的请求数 >= {ops}",
+            got=f"请求数={req}（METRICS 行 {len(metrics)} 条）",
+            why="不变式「零违规」只有在压测真跑过时才有意义。若一次都没驱动到，"
+                "违规数同样是 0 —— 报告会呈现为「全部通过」。",
+            how_it_fails="Activity 没起来、stress 入口改名、等待时间不足以跑完。",
+        ),
     }
 
 
@@ -384,12 +468,43 @@ def test_v3(adb: Adb, samples: int, sleep_ms: int, margin_ms: int, cells: list) 
     | 无记录 | 连唤醒后都没触发 |
     """
     out = {"sleep_ms": sleep_ms, "margin_ms": margin_ms, "samples": samples, "cells": {}}
+
+    # 亮屏基线要求屏幕**真的一直亮着**。系统息屏超时通常远短于 45 秒的睡眠窗,
+    # 不改它的话基线会自己熄屏 —— 2026-08-03 就是这么把四个基线样本全变成 None 的。
+    prev_timeout = (adb.shell("settings get system screen_off_timeout") or "").strip()
+    if "screen_on" in cells:
+        adb.shell("settings put system screen_off_timeout %d"
+                  % ((sleep_ms + margin_ms) * 3))
+
     for cell in cells:
         out["cells"][cell] = {}
         for mode in ("on", "off"):
             devs = [_ls_one(adb, mode, cell, sleep_ms, margin_ms) for _ in range(samples)]
             out["cells"][cell][mode] = _ls_stats(devs, margin_ms)
-            print("[devicetest]   %s/%s: %s" % (cell, mode, devs))
+            print("[devicetest]   %s/%s: %s" % (cell, mode, devs), flush=True)
+
+    if prev_timeout.isdigit():
+        adb.shell("settings put system screen_off_timeout " + prev_timeout)
+
+    # 基线自检。**基线不可省略** —— 允许跳过它，就等于给自检开了后门。
+    base = out["cells"].get("screen_on")
+    if base is None:
+        ok, got = False, "cells 中没有 screen_on —— 无基线即不可判定"
+    else:
+        tot = sum(g.get("n", 0) for g in base.values())
+        ont = sum(g.get("ontime", 0) for g in base.values())
+        ok = tot > 0 and ont == tot
+        got = "亮屏组准时 %d/%d" % (ont, tot)
+    out["_selfcheck"] = selfcheck(
+        "V3 · 亮屏基线必须全部准时",
+        ok=ok,
+        expect="screen_on 两组【全部】准时（dev < 1s）",
+        got=got,
+        why="亮屏时 CPU 醒着、进程不冻，定时器没有任何被推迟的理由。这一格若不准时，"
+            "说明夹具本身有问题,screen_off / doze 的差异就无从归因。",
+        how_it_fails="屏幕自动超时熄灭（2026-08-03 实际发生）、Activity 没起来、"
+                     "日志正则改动、或设备被其它任务占用。",
+    )
     return out
 
 
@@ -415,6 +530,47 @@ def test_monkey(adb: Adb, events: int) -> dict:
 
 # ── 报告 ────────────────────────────────────────────────────────────
 
+def _checks(res: dict) -> list:
+    """收集全部自检结果，(段名, 自检) 列表。"""
+    out = []
+    for k, v in res.items():
+        if isinstance(v, dict) and "_selfcheck" in v:
+            out.append((k, v["_selfcheck"]))
+        elif isinstance(v, list):
+            for r in v:
+                if isinstance(r, dict) and "_selfcheck" in r:
+                    out.append((k, r["_selfcheck"]))
+    return out
+
+
+def _sc_ok(res: dict, key: str) -> bool:
+    """该段自检是否通过。**没有自检也算不通过** —— 无自检的实验不许出结论。"""
+    for k, c in _checks(res):
+        if k == key:
+            return c["ok"]
+    return False
+
+
+def _void(a, res: dict, key: str) -> bool:
+    """若该段自检未过，就地打作废横幅并返回 True（调用方据此跳过结论）。"""
+    if _sc_ok(res, key):
+        return False
+    c = next((c for k, c in _checks(res) if k == key), None)
+    a("")
+    a("> ## ⛔ 本段数据作废 —— 夹具自检未通过")
+    a("> ")
+    if c:
+        a("> - **预期**：%s" % c["expect"])
+        a("> - **实得**：%s" % c["got"])
+        a("> - **为什么这条重要**：%s" % c["why"])
+        a("> - **它会怎么失败**：%s" % c["how_it_fails"])
+    else:
+        a("> - 本段【没有声明任何夹具自检】—— 无自检的实验不出结论。")
+    a("> ")
+    a("> 下方表格仅作原始记录保留，**不得据此下任何结论**。")
+    return True
+
+
 def render(dev: dict, res: dict) -> str:
     L: list[str] = []
     a = L.append
@@ -430,6 +586,26 @@ def render(dev: dict, res: dict) -> str:
     for l in dev["vibrator_raw"]:
         a(l)
     a("```")
+
+    checks = _checks(res)
+    if checks:
+        bad = [c for _, c in checks if not c["ok"]]
+        a("")
+        a("## 夹具自检")
+        a("")
+        a("> **预期写死在代码里,先于数据。** 自检失败 = 整段数据作废,不是警告。")
+        a("")
+        a("| 段 | 自检 | 结果 | 预期 | 实得 |")
+        a("|---|---|---|---|---|")
+        for k, c in checks:
+            a("| `%s` | %s | %s | %s | %s |"
+              % (k, c["name"], "通过" if c["ok"] else "**未通过**",
+                 c["expect"], c["got"]))
+        a("")
+        if bad:
+            a("**%d 段数据作废。** 相应结论已在下方被抑制。" % len(bad))
+        else:
+            a("全部通过 —— 下方结论可用。")
 
     if "v4" in res:
         a("")
@@ -450,13 +626,13 @@ def render(dev: dict, res: dict) -> str:
         a("")
         a("| 效果 | 我们提交 | 期望脉冲起点 | 实播起点 | 结论 |")
         a("|---|---|---|---|---|")
-        for r in res["waveform"]:
+        for r in [x for x in res["waveform"] if "semantic" in x]:
             a(f"| `{r['effect']}` | `{r['submitted']}` | {r['want_starts']} "
               f"| {r['got_starts']} | {r['verdict']} |")
         a("")
         a("<details><summary>dumpsys 原文</summary>")
         a("")
-        for r in res["waveform"]:
+        for r in [x for x in res["waveform"] if "semantic" in x]:
             a(f"- `{r['effect']}`：`{r['raw']}`")
         a("")
         a("</details>")
@@ -513,7 +689,10 @@ def render(dev: dict, res: dict) -> str:
                   % (cell, mode.upper(), d["n"], d["ontime"], d["deferred"],
                      d["missed"], p50, mx))
         a("")
+        voided = _void(a, res, "v3")
         for cell, g in v["cells"].items():
+            if voided:
+                break
             on, off = g.get("on", {}), g.get("off", {})
             if not on.get("n") or not off.get("n"):
                 a("- `%s`：样本不足,无结论" % cell)
@@ -638,6 +817,14 @@ def main() -> int:
         print(f"[devicetest] ⚠️ {len(drift)} 个效果的脉冲起点被 OEM 改写（见 P-21）：")
         for r in drift:
             print(f"    {r['effect']}: {r['want_starts']} → {r['got_starts']}")
+    bad = [(k, c) for k, c in _checks(res) if not c["ok"]]
+    if bad:
+        # **非零退出码** —— 自检失败必须能让 CI / 调用方看见,
+        # 否则"作废"只是报告里的一行字,跑批的人不会注意到。
+        print("[devicetest] ⛔ 夹具自检未通过 %d 段,相应数据已作废：" % len(bad))
+        for k, c in bad:
+            print("[devicetest]    %s · %s → 实得 %s" % (k, c["name"], c["got"]))
+        return 2
     return 0
 
 
