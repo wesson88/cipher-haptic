@@ -296,98 +296,100 @@ def _intervals_ms(stamps: list[str]) -> list[int]:
     return [b - a for a, b in zip(v, v[1:])]
 
 
-PLAY_RE = re.compile(r"V3SVC play r=(\d+) i=(\d+) at=(\d+)")
+FIRE_RE = re.compile(r"LS fire at=(\d+) dev=(-?\d+)ms wl=(\w+)")
 
 
-def _burst_intervals(adb: Adb, gap_ms: int) -> list[int]:
-    """从 logcat 提取同一轮 burst 内相邻播放的实际间隔。"""
-    rows = []
+def _ls_one(adb: Adb, mode: str, cell: str, sleep_ms: int, margin_ms: int):
+    """
+    跑一个样本：熄屏 → 等 sleep+margin → **脚本亮屏唤醒** → 读日志。
+
+    唤醒交给脚本而不是 App 内闹钟：实测 `setAlarmClock` 在本机也唤不醒设备
+    （它和被测定时器一起，在人手点亮屏幕那刻才响）。既然终究靠外力，就让外力可控。
+
+    返回 dev（毫秒）；`None` 表示唤醒后都没触发。
+    """
+    adb.shell("am force-stop " + PKG)
+    time.sleep(1)
+    adb.run("logcat", "-c")
+    adb.shell("am start -n " + ACT)
+    time.sleep(2)
+    adb.shell("am start-foreground-service -n %s/.V3Service --es wakelock %s --es sleepms %d"
+              % (PKG, mode, sleep_ms))
+    time.sleep(1)
+
+    if cell in ("screen_off", "doze"):
+        adb.shell("input keyevent 26")
+        time.sleep(1.5)
+    if cell == "doze":
+        # USB 供电会把设备一直摁在 active，必须先伪装拔电
+        adb.shell("dumpsys battery unplug")
+        adb.shell("dumpsys deviceidle force-idle")
+
+    time.sleep(sleep_ms / 1000.0 + margin_ms / 1000.0)
+
+    if cell == "doze":
+        adb.shell("dumpsys deviceidle unforce")
+        adb.shell("dumpsys battery reset")
+    if cell in ("screen_off", "doze"):
+        adb.shell("input keyevent 26")      # ← 唤醒时刻由脚本掌握
+        time.sleep(3)
+
+    dev = None
     for l in adb.logcat_lines():
-        m = PLAY_RE.search(l)
+        m = FIRE_RE.search(l)
         if m:
-            rows.append((int(m.group(1)), int(m.group(2)), int(m.group(3))))
-    out = []
-    for (r1, i1, t1), (r2, i2, t2) in zip(rows, rows[1:]):
-        # 只比同一轮内相邻序号 —— 跨轮的间隔由闹钟决定，不是观测量
-        if r1 == r2 and i2 == i1 + 1 and 0 < t2 - t1 < gap_ms * 20:
-            out.append(t2 - t1)
-    return out
+            dev = int(m.group(2))
+    adb.shell("am start-foreground-service -n %s/.V3Service --es cmd stop" % PKG)
+    return dev
 
 
-def _stats(iv: list[int], design: int) -> dict:
-    if not iv:
+def _ls_stats(devs: list, margin_ms: int) -> dict:
+    if not devs:
         return {"n": 0}
-    v = sorted(iv)
-    dev = sorted(x - design for x in iv)
+    ok = [d for d in devs if d is not None]
+    d = sorted(ok)
     return {
-        "n": len(v),
-        "p50": v[len(v) // 2],
-        "p95": v[min(len(v) - 1, int(len(v) * 0.95))],
-        "max": v[-1],
-        "dev_p50": dev[len(dev) // 2],
-        "over2x": sum(1 for x in v if x > design * 2),
+        "n": len(devs),
+        "missed": sum(1 for x in devs if x is None),
+        "p50": d[len(d) // 2] if d else None,
+        "max": d[-1] if d else None,
+        # 偏差接近 margin = 被挂起到脚本唤醒才触发
+        "deferred": sum(1 for x in d if x > margin_ms * 0.5),
+        "ontime": sum(1 for x in d if x < 1000),
     }
 
 
-def test_v3(adb: Adb, rounds: int, burst: int, cells: list[str]) -> dict:
+def test_v3(adb: Adb, samples: int, sleep_ms: int, margin_ms: int, cells: list) -> dict:
     """
-    V3 - wake lock 有效性（P-10）。**前台服务 + AlarmManager**。
+    V3 - wake lock 有效性（P-10）。**长睡眠调度延迟测法**。
 
-    ## 三条被 ROM 挡掉的路，与最终选择
+    ## 测什么
 
-    | 触发方式 | 结果 |
+    直接驱动库里的 `WakeLockGateway`（`PlaybackHandle` 用的同一个），跨一个
+    **足够长到 CPU 真能挂起**的间隙排一个定时器，测它准不准。被保护的对象是
+    **两次提交之间的调度间隙** —— 系统的 `*vibrator*` 锁只覆盖正在播的那一段。
+
+    ## 上一版为什么作废
+
+    800ms 串内间隔，两组都是 800ms±1ms，"看起来"是无效。**那是假的**：间隔太短设备
+    来不及挂起，且每次播放自己就把 CPU 摁醒了。两组没差别是必然的 —— 不是证据，
+    是实验没能让 CPU 睡着。改为 45s 长睡后，OFF 组首轮实测 **dev=91440ms**。
+
+    ## 判读
+
+    | `dev` | 含义 |
     |---|---|
-    | Activity + `am start` | **会点亮屏幕** —— 一发命令前提条件就没了 |
-    | BroadcastReceiver | **ColorOS 冻结后台应用的广播投递** |
-    | **前台服务** | 熄屏后继续跑（与"来电"同级，ROM 一般不冻） |
-
-    ## 观测量的隔离
-
-    闹钟**只负责把 CPU 叫醒**；唤醒后由**库自己的 scheduler** 连排一串播放，
-    测那一串的间隔。首版让闹钟直接驱动每轮播放，实测 5019ms vs 设计 2000ms ——
-    那是 `setExactAndAllowWhileIdle` 被限流，**不是我们的调度慢**。
-
-    ## Doze 怎么进（USB 连着也能进）
-
-    `dumpsys battery unplug` 伪装成拔了充电器，再 `deviceidle force-idle`。
-    否则 USB 供电会一直把设备摁在 active，Doze 那一格永远测不到。
+    | < 1s | **准时** —— CPU 没睡，或锁挡住了睡眠 |
+    | ≈ margin | **被挂起到脚本唤醒才触发** —— 正是 wake lock 要防的 |
+    | 无记录 | 连唤醒后都没触发 |
     """
-    design = BURST_GAP_MS
-    out: dict = {"design_gap_ms": design, "rounds": rounds, "burst": burst, "cells": {}}
-
+    out = {"sleep_ms": sleep_ms, "margin_ms": margin_ms, "samples": samples, "cells": {}}
     for cell in cells:
         out["cells"][cell] = {}
         for mode in ("on", "off"):
-            adb.shell("am force-stop " + PKG)
-            time.sleep(1)
-            adb.run("logcat", "-c")
-            adb.shell("am start -n " + ACT)
-            time.sleep(2)
-            adb.shell("am start-foreground-service -n %s/.V3Service "
-                      "--es wakelock %s --es rounds %d --es burst %d"
-                      % (PKG, mode, rounds, burst))
-            time.sleep(1)
-
-            if cell in ("screen_off", "doze"):
-                adb.shell("input keyevent 26")
-                time.sleep(1.5)
-            if cell == "doze":
-                adb.shell("dumpsys battery unplug")
-                adb.shell("dumpsys deviceidle force-idle")
-                time.sleep(1)
-
-            time.sleep(rounds * (burst * design / 1000.0 + 11) + 3)
-
-            iv = _burst_intervals(adb, design)
-            out["cells"][cell][mode] = _stats(iv, design)
-
-            if cell == "doze":
-                adb.shell("dumpsys deviceidle unforce")
-                adb.shell("dumpsys battery reset")
-            adb.shell("am start-foreground-service -n %s/.V3Service --es cmd stop" % PKG)
-            if cell in ("screen_off", "doze"):
-                adb.shell("input keyevent 26")
-            time.sleep(1)
+            devs = [_ls_one(adb, mode, cell, sleep_ms, margin_ms) for _ in range(samples)]
+            out["cells"][cell][mode] = _ls_stats(devs, margin_ms)
+            print("[devicetest]   %s/%s: %s" % (cell, mode, devs))
     return out
 
 
@@ -491,13 +493,13 @@ def render(dev: dict, res: dict) -> str:
     if "v3" in res:
         v = res["v3"]
         a("")
-        a("## V3 - wake lock 有效性（P-10）")
+        a("## V3 - wake lock 有效性（P-10）· 长睡眠调度延迟")
         a("")
-        a("- 串内设计间隔 **%dms**；每格 %d 轮 x %d 次"
-          % (v["design_gap_ms"], v["rounds"], v["burst"]))
-        a("- 闹钟只负责唤醒 CPU，**观测量是库自己 scheduler 排出的那一串**")
+        a("- 每轮睡 **%dms** 其间什么都不做,让设备真正挂起;超时 %dms 后**由脚本亮屏唤醒**"
+          % (v["sleep_ms"], v["margin_ms"]))
+        a("- 直接驱动库里的 `WakeLockGateway`(`PlaybackHandle` 用的同一个)")
         a("")
-        a("| 场景 | wake lock | n | p50 | p95 | 最大 | 偏差 p50 | 超 2 倍 |")
+        a("| 场景 | wake lock | n | 准时(<1s) | **被推迟** | 未触发 | 偏差 p50 | 偏差最大 |")
         a("|---|---|---|---|---|---|---|---|")
         for cell, g in v["cells"].items():
             for mode in ("on", "off"):
@@ -505,26 +507,33 @@ def render(dev: dict, res: dict) -> str:
                 if not d.get("n"):
                     a("| %s | %s | **0** | - | - | - | - | - |" % (cell, mode.upper()))
                     continue
-                a("| %s | **%s** | %d | %dms | %dms | %dms | %+dms | %d |"
-                  % (cell, mode.upper(), d["n"], d["p50"], d["p95"], d["max"],
-                     d["dev_p50"], d["over2x"]))
+                p50 = "-" if d["p50"] is None else "%dms" % d["p50"]
+                mx = "-" if d["max"] is None else "%dms" % d["max"]
+                a("| %s | **%s** | %d | %d | **%d** | %d | %s | %s |"
+                  % (cell, mode.upper(), d["n"], d["ontime"], d["deferred"],
+                     d["missed"], p50, mx))
         a("")
         for cell, g in v["cells"].items():
             on, off = g.get("on", {}), g.get("off", {})
             if not on.get("n") or not off.get("n"):
-                a("- `%s`：样本不足，无结论" % cell)
+                a("- `%s`：样本不足,无结论" % cell)
                 continue
-            diff = abs(on["dev_p50"] - off["dev_p50"])
-            rel = diff * 100.0 / max(1, v["design_gap_ms"])
-            tag = "**有效**" if rel >= 20 else ("无效" if rel < 5 else "灰区")
-            a("- `%s`：两组偏差 p50 相差 %dms（%.1f%%）-> %s" % (cell, diff, rel, tag))
+            bad_on = on["deferred"] + on["missed"]
+            bad_off = off["deferred"] + off["missed"]
+            diff = bad_off - bad_on
+            rel = diff * 100.0 / max(1, on["n"])
+            tag = "**有效**" if rel >= 20 else ("无效" if abs(rel) < 5 else "灰区")
+            a("- `%s`：OFF 组坏样本 %d/%d,ON 组 %d/%d,相差 %.0f 个百分点 -> %s"
+              % (cell, bad_off, off["n"], bad_on, on["n"], rel, tag))
         a("")
-        a("> **判据**（P0 计划 4.6）：任一格 >=20 个百分点 -> 有效；**所有格 <5 -> 无效，")
-        a("> 直接删掉 `AndroidWakeLock` 与 `WAKE_LOCK` 权限**，不留装饰性代码。")
+        a("> **判据**(P0 计划 4.6)：OFF 组坏样本率比 ON 组高 >=20 个百分点 -> **有效,保留**;")
+        a("> 两组无差异 -> 无效,删掉 `AndroidWakeLock` 与 `WAKE_LOCK` 权限。")
+        a("> 坏样本 = 被推迟(dev > margin/2) 或 未触发。")
         a(">")
-        a("> 注意 `screen_on` 只是基线 —— CPU 本来就醒着，两组必然没差别。真正的判据在")
-        a("> `screen_off` 与 `doze`。`doze` 格用 `dumpsys battery unplug` 伪装拔电，")
-        a("> 否则 USB 供电会把设备一直摁在 active。")
+        a("> `screen_on` 是基线 —— CPU 本来就醒着,两组都该准时;它证明夹具没坏。")
+        a(">")
+        a("> ⚠️ 上一版用 800ms 串内间隔,两组都是 800ms±1ms —— **那是假结论**:间隔太短")
+        a("> 设备来不及挂起,且每次播放自己就把 CPU 摁醒了(`*vibrator*` 系统锁)。")
 
     if "monkey" in res:
         m = res["monkey"]
@@ -552,9 +561,11 @@ def main() -> int:
     ap.add_argument("--v5-samples", type=int, default=20)
     ap.add_argument("--stress-ops", type=int, default=500)
     ap.add_argument("--monkey", type=int, default=20000)
-    ap.add_argument("--v3-rounds", type=int, default=8)
-    ap.add_argument("--v3-burst", type=int, default=6,
-                    help="每次唤醒连排几次播放 —— 这一串的间隔才是观测量")
+    ap.add_argument("--v3-samples", type=int, default=5)
+    ap.add_argument("--v3-sleep-ms", type=int, default=45000,
+                    help="必须 < AndroidWakeLock.MAX_HOLD_MS(60s),否则 ON 组锁会自己过期")
+    ap.add_argument("--v3-margin-ms", type=int, default=15000,
+                    help="预定触发后再等多久才由脚本亮屏唤醒")
     ap.add_argument("--v3-cells", default="screen_on,screen_off,doze")
     ap.add_argument("--out", default=os.path.join(ROOT, "reports"))
     args = ap.parse_args()
@@ -603,10 +614,11 @@ def main() -> int:
         res["stress"] = test_stress(adb, args.stress_ops)
     if "v3" in only:
         cells = [c.strip() for c in args.v3_cells.split(",") if c.strip()]
-        mins = len(cells) * 2 * args.v3_rounds * 12 // 60
-        print(f"[devicetest] V3 wake lock（格 {cells}，{args.v3_rounds} 轮 x "
-              f"{args.v3_burst} 次，预计 {mins} 分钟）…")
-        res["v3"] = test_v3(adb, args.v3_rounds, args.v3_burst, cells)
+        per = args.v3_samples * (args.v3_sleep_ms / 1000.0 + args.v3_margin_ms / 1000.0 + 9)
+        print(f"[devicetest] V3 长睡眠（格 {cells}，每组 {args.v3_samples} 次 x "
+              f"{args.v3_sleep_ms}ms，预计 {int(len(cells) * 2 * per / 60)} 分钟）…")
+        res["v3"] = test_v3(adb, args.v3_samples, args.v3_sleep_ms,
+                            args.v3_margin_ms, cells)
     if "monkey" in only:
         print(f"[devicetest] monkey（{args.monkey} 事件，可能数分钟）…")
         res["monkey"] = test_monkey(adb, args.monkey)

@@ -1,144 +1,169 @@
 package com.cipherlex.haptic.demo
 
-import android.app.AlarmManager
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.os.Handler
 import android.os.IBinder
 import android.os.SystemClock
 import android.util.Log
 import com.cipherlex.haptic.CipherHaptic
-import com.cipherlex.haptic.CipherHapticCancelToken
 import com.cipherlex.haptic.CipherHapticSemantic
+import com.cipherlex.haptic.engine.AndroidWakeLock
 import com.cipherlex.haptic.engine.NoWakeLock
+import com.cipherlex.haptic.engine.WakeLockGateway
 
 /**
- * V3 的熄屏 / Doze 执行体 —— **前台服务 + AlarmManager**。
+ * V3 的熄屏 / Doze 执行体 —— **长睡眠延迟测法**。
  *
- * ## 为什么必须走到这一步
+ * ## 被测的是什么
  *
- * 前两版触发方式都被 ROM 挡住了：
+ * 不是"振动播不播得出来"。`dumpsys power` 已证明 `vibrate()` 时**系统会自行获取
+ * `*vibrator*` partial wake lock**，对**已提交**的振动，app 侧再持锁是多余的。
  *
- * | 方式 | 结果 |
+ * 真正还需要锁的是**两次提交之间的调度间隙**：`looping` 靠我们自己的 end-timer
+ * 重排、`continuous` 靠 idle-timer —— **那些定时器要 CPU 醒着才会准时触发**。
+ * 系统的 `*vibrator*` 锁只覆盖它正在播的那一段，覆盖不到间隙。
+ *
+ * 所以本服务直接驱动 [WakeLockGateway]（库里 `PlaybackHandle` 用的同一个东西），
+ * 跨一个长间隙排一个定时器，测它准不准。
+ *
+ * ## 为什么间隙必须够长 —— 上一版就栽在这里
+ *
+ * 首版用 800ms 串内间隔，两组实测都是 800ms±1ms，"看起来"结论是无效。**但那是假的**：
+ *
+ * - 800ms 太短，设备**根本来不及挂起**；
+ * - 更要命的是**每次播放自己就把 CPU 摁醒了**（`*vibrator*` 锁），足以撑到 800ms
+ *   后的下一次。
+ *
+ * 两组测不出差别是必然的 —— 那不是"锁没用"的证据，是**实验没能让 CPU 睡着**。
+ *
+ * 现在改为：**一次睡 [DEFAULT_SLEEP_MS]，其间什么都不做**，让设备真正沉下去。
+ *
+ * ## 为什么是 45 秒
+ *
+ * [AndroidWakeLock] 的 `MAX_HOLD_MS = 60_000` —— 锁自带 60 秒兜底超时。取 45 秒是为了
+ * **整个观测窗都落在锁真正有效的区间内**；超过 60 秒，ON 组的锁会自己过期，测出来的
+ * 就不是"持锁 vs 不持锁"了。
+ *
+ * ## 唤醒为什么交给脚本，而不是 App 内的闹钟
+ *
+ * 若定时器被挂起推迟，它**不会自己醒来报告**，得有外力唤醒才能观测。首版试过在 App 内
+ * 用 `setAlarmClock` 做观测点（号称不受 Doze 限流），**实测它也没能唤醒设备** ——
+ * 它和被测定时器一起，在人手点亮屏幕的那一刻才响。
+ *
+ * 既然唤醒终究要靠外力，就不在 App 里绕：**脚本熄屏 → 等 sleep+margin → 亮屏 → 读日志**。
+ * 唤醒时刻由脚本掌握，因此偏差可以干净地判读：
+ *
+ * | `dev` | 含义 |
  * |---|---|
- * | Activity + `am start` | `am start` **会点亮屏幕** —— 一发命令前提条件就没了 |
- * | BroadcastReceiver | **ColorOS 冻结后台应用的广播投递**（实测：进程存活、`am` 回 result=0，接收器却没跑；把 App 拉回前台后排队的广播才涌出来） |
+ * | ≈ 0 | 定时器**准时触发** —— CPU 没睡，或锁挡住了睡眠 |
+ * | ≈ margin | **被挂起到脚本唤醒才触发** —— 正是 wake lock 要防的 |
+ * | 无 `LS fire` 行 | 连唤醒后都没触发 |
  *
- * 前台服务是 ROM 一般不冻的那一类（与"来电"同级）。实测 `usage: RINGTONE |
- * com.ss.android.lark` 说明飞书的来电振动正是走这条路。
- *
- * ## AlarmManager 的必要性
- *
- * 光有前台服务还不够：**熄屏后 CPU 会睡**，`Handler.postDelayed` 会被推迟到下次唤醒
- * —— 而那恰恰是 V3 要测的量。`setExactAndAllowWhileIdle` 能穿透 Doze，用它来**触发**
- * 每一轮播放，就把"我们的定时器准不准"与"闹钟准不准"分开了：
- *
- * - 闹钟负责**按时唤醒**（系统保证，穿透 Doze）
- * - 我们负责**播放并记录时刻**
- *
- * 于是测出来的偏差干净地归因到"库自己的调度"，而不是"进程根本没被唤醒"。
+ * 首轮实测（OFF 组、熄屏）：`dev=91440ms` —— 排在 +45s 的定时器 +136s 才响。
  *
  * ## ⚠️ 这个 demo 的做法不代表库的推荐用法
  *
- * 见主文档 **A.1b**：**后台告警不该走这个库**，该走 `NotificationChannel`
- * 让系统代为振动。这里搭前台服务纯粹是为了**把 V3 那个变量测出来**，
- * 不是在示范"应该这样做后台触觉"。
+ * 见主文档 **A.1b**：**后台告警不该走这个库**，该走 `NotificationChannel` 让系统代振。
+ * 这里搭前台服务纯粹是为了**把 V3 那个变量测出来**。
+ *
+ * ## ⛔ 实测纠正：前台服务**并不能**免于被冻结
+ *
+ * 本文件早先写过"前台服务是 ROM 一般不冻的那一类" —— **实测证伪**。心跳序列（2026-08-03）：
+ *
+ * ```
+ * hb n=3 at=15002ms   ← 准时
+ * hb n=4 at=20005ms   ← 准时
+ * hb n=5 at=61307ms   ← 本该 25000ms
+ * hb n=6..9 at=61307ms  fire at=61308ms  ← 全部积压，在亮屏瞬间挤成一堆
+ * ```
+ *
+ * 熄屏约 20 秒后进程即被冻结，**且全程 `wl=ON`（锁确实持着，`dumpsys power` 可见）**。
+ * 更早的 burst 版之所以看着正常，是因为每 10 秒一次的闹钟不断把进程解冻，掩盖了现象。
  */
 class V3Service : Service() {
 
     private var haptic: CipherHaptic? = null
-    private var token: CipherHapticCancelToken? = null
-    private var holdWakeLock = true
-    private var roundsLeft = 0
-    private var burstPerRound = BURST_PER_ROUND
+    private var wl: WakeLockGateway = NoWakeLock
+    private var holdWakeLock = false
+
+    private var sleepMs = DEFAULT_SLEEP_MS
+
+    private val handler by lazy { Handler(mainLooper) }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         startForeground(NOTIF_ID, buildNotification())
 
-        when (intent?.getStringExtra("cmd")) {
-            "stop" -> { stopAll(); stopSelf(); return START_NOT_STICKY }
-            "tick" -> { playOneRound(); return START_STICKY }   // 闹钟回调
-        }
+        if (intent?.getStringExtra("cmd") == "stop") { finish(); return START_NOT_STICKY }
 
         holdWakeLock = intent?.getStringExtra("wakelock") != "off"
-        roundsLeft = intent?.getStringExtra("rounds")?.toIntOrNull() ?: 20
-        // Doze 下 setExactAndAllowWhileIdle 被限流到约 9 分钟一次，靠多轮闹钟采样不现实。
-        // 故支持"少轮次 + 长串"：一次唤醒内连排很多次，直接测 CPU 会不会在其间睡去。
-        burstPerRound = intent?.getStringExtra("burst")?.toIntOrNull() ?: BURST_PER_ROUND
-        val h = CipherHaptic.create(
+        sleepMs = intent?.getStringExtra("sleepms")?.toLongOrNull() ?: DEFAULT_SLEEP_MS
+
+        // ON 组用库里真正那个锁；OFF 组用库里真正那个空实现。测的是同一对对照。
+        wl = if (holdWakeLock) AndroidWakeLock(applicationContext) else NoWakeLock
+        haptic = CipherHaptic.create(
             applicationContext,
             wakeLockOverride = if (holdWakeLock) null else NoWakeLock,
         )
-        haptic = h
-        Log.i(TAG, "V3SVC start wakelock=${if (holdWakeLock) "ON" else "OFF"} rounds=$roundsLeft")
-        playOneRound()
+
+        Log.i(TAG, "LS start wl=${if (holdWakeLock) "ON" else "OFF"} sleep=${sleepMs}ms")
+        startCycle()
         return START_STICKY
     }
 
     /**
-     * 一轮：播一次 → 排下一次闹钟。
+     * 一轮：持锁（若 ON）→ 排一个 [sleepMs] 之后的播放 → 就地不动。
      *
-     * **刻意用 oneshot 逐轮触发，而不是 looping**：looping 在平台侧是无限循环
-     * （`repeat=0`），**不产生离散的提交记录**，间隔就无从测起（见状态机 §4.7）。
-     * 逐轮 oneshot 每次都在 `dumpsys vibrator_manager` 留一条带时间戳的记录，
-     * 相邻两条之差就是我们要的观测量。
+     * 关键在于**这段时间内我们什么都不做**：不播放、不排其它定时器、不设闹钟。
+     * 只有这样设备才有机会真正挂起 —— 而那正是 wake lock 声称要防的事。
+     *
+     * 跑完一轮即停。多样本由脚本反复拉起，**每轮都是干净的初始态**。
      */
-    private fun playOneRound() {
-        val h = haptic ?: return
-        if (roundsLeft <= 0) { stopAll(); stopSelf(); return }
-        roundsLeft--
+    private fun startCycle() {
+        val t0 = SystemClock.elapsedRealtime()
+        val u0 = SystemClock.uptimeMillis()
+        if (holdWakeLock) wl.acquire()
+        Log.i(TAG, "LS cycle t0=$t0 u0=$u0 wl=${if (holdWakeLock) "ON" else "OFF"}")
 
-        // ⚠️ **闹钟只负责把 CPU 叫醒，被测对象是【库自己的定时器】。**
-        //
-        // 首版让闹钟直接驱动每一轮播放，结果实测间隔 5019ms 而设计是 2000ms ——
-        // 那是 setExactAndAllowWhileIdle 被系统限流，**不是我们的调度慢**。照那样测
-        // 下去，测的是闹钟精度，与 V3 要回答的问题无关。
-        //
-        // 现在改为：闹钟唤醒后，用【库自己的 scheduler】连排一串播放，测那串的间隔。
-        // 于是"CPU 睡了导致我们的定时器被推迟"这个变量才被隔离出来 —— 这正是 wake lock
-        // 声称要防的东西。
-        val burst = burstPerRound
-        val gap = BURST_GAP_MS
-        for (i in 0 until burst) {
-            android.os.Handler(mainLooper).postDelayed({
-                h.playEffect(CipherHapticSemantic.NOTIFY_MESSAGE)
-                Log.i(TAG, "V3SVC play r=$roundsLeft i=$i at=${SystemClock.elapsedRealtime()}")
-            }, i * gap)
+        // 心跳：用来区分"CPU 挂起"与"进程被冻结"。
+        // 若进程被冻结，这些消息不会按时执行，而会在解冻瞬间**挤成一堆**同时触发 ——
+        // 那是 cgroup freezer 的特征，wake lock 对它完全无能为力（两者是不同机制）。
+        for (i in 1..12) {
+            handler.postDelayed({
+                Log.i(TAG, "LS hb n=$i at=${SystemClock.elapsedRealtime() - t0}ms")
+            }, i * 5_000L)
         }
-        Log.i(TAG, "V3SVC round left=$roundsLeft burst=$burst gap=${gap}ms " +
-                   "at=${SystemClock.elapsedRealtime()}")
 
-        val am = getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val pi = PendingIntent.getService(
-            this, 0,
-            Intent(this, V3Service::class.java).putExtra("cmd", "tick"),
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        )
-        // setExactAndAllowWhileIdle 是唯一能穿透 Doze 的精确闹钟。
-        // ⚠️ 系统对它有频率限制（Doze 下每 app 约 9 分钟一次），所以这个测法在真 Doze
-        //    里只能低频采样 —— 熄屏（非 Doze）下不受限。这条限制必须写进报告，
-        //    否则会把"闹钟被限流"误读成"我们的调度不准"。
-        am.setExactAndAllowWhileIdle(
-            AlarmManager.ELAPSED_REALTIME_WAKEUP,
-            SystemClock.elapsedRealtime() + ROUND_INTERVAL_MS, pi,
-        )
+        handler.postDelayed({
+            val at = SystemClock.elapsedRealtime()
+            // ⚠️ 同时打两个钟：postDelayed 排程用的是 uptimeMillis，**它在 CPU 挂起期间停走**；
+            //    elapsedRealtime 则一直走。两者之差 = 设备真正睡掉的时长。
+            //    这是区分"锁没生效"与"锁生效了但定时器另有问题"的唯一直接证据。
+            val up = SystemClock.uptimeMillis()
+            Log.i(TAG, "LS fire at=$at dev=${at - t0 - sleepMs}ms " +
+                       "wall=${at - t0}ms cpu=${up - u0}ms slept=${(at - t0) - (up - u0)}ms " +
+                       "wl=${if (holdWakeLock) "ON" else "OFF"}")
+            haptic?.playEffect(CipherHapticSemantic.NOTIFY_MESSAGE)
+            if (holdWakeLock) wl.release()
+        }, sleepMs)
     }
 
-    private fun stopAll() {
-        token?.cancel()
-        token = null
+    private fun finish() {
+        handler.removeCallbacksAndMessages(null)
+        runCatching { wl.release() }
         haptic?.stopAllEffects()
-        Log.i(TAG, "V3SVC stop")
+        Log.i(TAG, "LS done")
+        stopSelf()
     }
 
     override fun onDestroy() {
-        stopAll()
+        runCatching { wl.release() }
         super.onDestroy()
     }
 
@@ -152,7 +177,7 @@ class V3Service : Service() {
         )
         return Notification.Builder(this, CHANNEL)
             .setContentTitle("CipherHaptic V3 测试中")
-            .setContentText("熄屏 / Doze 下的调度偏差采集")
+            .setContentText("长睡眠调度延迟采集")
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .build()
     }
@@ -161,17 +186,9 @@ class V3Service : Service() {
         const val TAG = "CipherHapticTuner"
         const val CHANNEL = "v3"
         const val NOTIF_ID = 31
-        /** 每轮之间的闹钟间隔。**它本身会被系统限流，不是观测量。** */
-        const val ROUND_INTERVAL_MS = 10_000L
 
-        /** 每次唤醒后连排几次播放 —— 这一串的间隔才是观测量。 */
-        const val BURST_PER_ROUND = 5
+        /** 睡眠时长。**必须 < `AndroidWakeLock.MAX_HOLD_MS`(60s)**，否则 ON 组的锁会自己过期。 */
+        const val DEFAULT_SLEEP_MS = 45_000L
 
-        /**
-         * 串内间隔。**故意取得比屏幕关闭后 CPU 的典型休眠周期长**，
-         * 这样"定时器是否被推迟"才有机会显现；太短则每次都在同一个唤醒窗口内完成，
-         * 测不出差异。
-         */
-        const val BURST_GAP_MS = 800L
     }
 }

@@ -94,6 +94,30 @@ object NoWakeLock : WakeLockGateway {
  * 所以 V3 的实验应聚焦：**熄屏 / Doze 下的 looping 与 continuous，两次提交的间隔
  * 是否被拉长**，而不是"单次 oneshot 是否播完"。见 [[P0验证计划]] V3。
  *
+ * ## V3 实测结论（2026-08-03，OPPO PJJ110 / ColorOS / SDK 36）
+ *
+ * **在这台机器上这道防线无效 —— 但不是因为它没用，而是它防的东西根本不是威胁。**
+ *
+ * 45 秒长睡实验，双时钟取证：
+ *
+ * ```
+ * ON : dev=16364ms wall=61364ms cpu=61364ms slept=0ms
+ * OFF: dev=16331ms wall=61331ms cpu=61330ms slept=1ms
+ * ```
+ *
+ * `slept=0` 表示 **CPU 全程没有挂起**（`uptimeMillis` 与 `elapsedRealtime` 同步走完）。
+ * 那 wake lock 就无事可做。真正让定时器晚 16 秒的是 **cgroup freezer 冻结进程**
+ * （心跳在第 20 秒断裂，解冻瞬间全部积压触发），**前台服务也挡不住**。
+ *
+ * | | wake lock 防的 | 实际发生的 |
+ * |---|---|---|
+ * | 机制 | CPU suspend | cgroup freezer |
+ * | 锁能否阻止 | 能 | **完全不能** —— 两套独立机制 |
+ *
+ * ⚠️ **但不要据此删除本类。** 这是一台 ColorOS 机器的结论；AOSP / Pixel 上深睡是真会
+ * 发生的，届时锁防的才是真威胁。海外版要覆盖 Pixel，**且模拟器答不了这个问题**
+ * （虚拟机不真挂起）。P-10 的状态是"问题被重新定义"，不是"已判无效"。
+ *
  * 判定条件按**场景**而非时长：v1.1.0 写「短 transient（<50ms）不持」，
  * **判断维度错了** —— wake lock 防的是 CPU 睡眠打断振动，与屏幕状态相关、
  * 与振动时长无关。
