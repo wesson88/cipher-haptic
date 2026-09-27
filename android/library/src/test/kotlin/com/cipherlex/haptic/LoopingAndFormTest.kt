@@ -37,7 +37,7 @@ class LoopingAndFormTest {
             every { hasVibrator } returns true
             every { hasAmplitudeControl } returns (hw != HardwareClass.ERM_Z)
             every { sdkInt } returns sdk
-            every { areAllPrimitivesSupported(*anyIntArray()) } returns primitivesSupported
+            every { areAllPrimitivesSupported(*anyIntVararg()) } returns primitivesSupported
             every { vibrateWaveform(any(), any(), any()) } answers {
                 if (failing) throw RuntimeException("fake DeadObjectException")
                 waves += Wave(firstArg<LongArray>().toList(), secondArg<IntArray>().toList(), thirdArg())
