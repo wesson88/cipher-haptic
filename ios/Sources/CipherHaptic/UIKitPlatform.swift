@@ -86,6 +86,6 @@ final class UIKitLifecycle: LifecycleSource {
                                      queue: nil) { _ in onResume() })
     }
 
-    deinit { tokens.forEach(NotificationCenter.default.removeObserver) }
+    deinit { tokens.forEach { NotificationCenter.default.removeObserver($0) } }
 }
 #endif

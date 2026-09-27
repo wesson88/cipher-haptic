@@ -13,6 +13,15 @@ public struct IOSEvent: Hashable, Sendable {
     public let sharpness: Float
     /// 仅 continuous。transient 不传（P-12）
     public let duration: Double?
+
+    // public struct 的逐一成员构造器默认是 internal —— 平台层（另一个模块）要构造它
+    public init(eventType: EventType, relativeTime: Double, intensity: Float, sharpness: Float, duration: Double?) {
+        self.eventType = eventType
+        self.relativeTime = relativeTime
+        self.intensity = intensity
+        self.sharpness = sharpness
+        self.duration = duration
+    }
 }
 
 /// IRTranslator · iOS 半边 —— 对应「语义层与中立 IR」§四.1 与 `reference/translate.py:to_ios_events`。
