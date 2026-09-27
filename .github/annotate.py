@@ -11,9 +11,14 @@ def esc(s: str) -> str:
 
 log = open(sys.argv[1], encoding="utf-8", errors="replace").read() if len(sys.argv) > 1 else ""
 n = 0
-# Kotlin 编译错误：e: file:///path/X.kt:12:5 message
-for m in re.finditer(r"^e: (?:file://)?(\S+?\.kts?):(\d+):\d+ (.*)$", log, re.M):
-    print("::error file=%s,line=%s::%s" % (m.group(1), m.group(2), esc(m.group(3))))
+# Kotlin 编译诊断。2.x：`e: file:///p/X.kt:12:5 msg`；1.9：`e: file:///p/X.kt: (12, 5): msg`。
+# 开了 -Werror 的模块里 `w:` 同样致命，一并转出
+for m in re.finditer(r"^([ew]): (?:file://)?(\S+?\.kts?):? ?\(?(\d+)(?::|, )\d+\)?:? (.*)$", log, re.M):
+    level = "error" if m.group(1) == "e" else "warning"
+    print("::%s file=%s,line=%s::%s" % (level, m.group(2), m.group(3), esc(m.group(4))))
+    n += 1
+for m in re.finditer(r"^e: (?!file:)(.*)$", log, re.M):
+    print("::error::%s" % esc(m.group(1)))
     n += 1
 # Gradle 的 What went wrong 段
 for m in re.finditer(r"\* What went wrong:\n(.+?)(?:\n\* Try:|\Z)", log, re.S):
