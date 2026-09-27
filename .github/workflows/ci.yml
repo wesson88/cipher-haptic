@@ -20,6 +20,8 @@ jobs:
         run: |
           python tools/golden.py
           git diff --exit-code -- spec/golden.json
+      - name: iOS 内嵌副本与 spec 一致（SwiftPM 资源引用不到 spec/，由 extract.py 同步写入）
+        run: cmp spec/runtime.min.json ios/Sources/CipherHapticCore/Resources/runtime.min.json
       # extract.py --check（vault → spec/ 逐字节对拍）需要本地 vault，CI 上跑不了；开发机提交前手动跑
 
   android:
@@ -43,3 +45,27 @@ jobs:
         if: failure()
         working-directory: android
         run: python3 ../.github/annotate.py build.log
+
+  ios:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 纯逻辑 + facade（fake gateway）单测（macOS 主机，含 golden 对拍）
+        run: |
+          set -o pipefail
+          swift test 2>&1 | tee swift.log
+      - name: 编译错误 / 失败用例转 annotation
+        if: failure()
+        run: |
+          grep -E ": error: " swift.log | sort -u | sed -E 's/^([^:]+):([0-9]+):[0-9]+: error: (.*)$/::error file=\1,line=\2::\3/' || true
+          grep -E "XCTAssert|failed \(" swift.log | head -40 | sed -E 's/^/::error::/' || true
+      - name: Core Haptics / UIKit 层编译 + 全部测试（iOS 模拟器）
+        # 公开仓库的 job 日志需鉴权才能读，annotation 不需要
+        run: |
+          UDID=$(xcrun simctl list devices available -j | python3 -c "import json,sys; d=json.load(sys.stdin)['devices']; print(next(x['udid'] for k,v in d.items() if 'iOS' in k for x in v if x['name'].startswith('iPhone')))")
+          echo "simulator: $UDID"
+          xcodebuild test -scheme CipherHaptic-Package -destination "id=$UDID" > build.log 2>&1 || true
+          grep -E ": error: " build.log | sort -u | sed -E 's/^([^:]+):([0-9]+):[0-9]+: error: (.*)$/::error file=\1,line=\2::\3/' || true
+          grep -E "xcodebuild: error|error: -\[" build.log | head -20 | sed -E 's/^/::error::/' || true
+          tail -30 build.log
+          grep -q "TEST SUCCEEDED" build.log

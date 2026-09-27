@@ -444,6 +444,10 @@ def build(vault: str) -> dict[str, str]:
     return out
 
 
+IOS_RUNTIME = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "ios", "Sources",
+                           "CipherHapticCore", "Resources", "runtime.min.json")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="vault SSOT → spec/ 单向抽取")
     ap.add_argument("--vault", default=os.environ.get("CIPHERHAPTIC_VAULT", DEFAULT_VAULT))
@@ -460,8 +464,11 @@ def main() -> int:
 
     out_dir = os.path.abspath(args.out)
     drift = []
-    for name, body in artifacts.items():
-        path = os.path.join(out_dir, name)
+    targets = [(name, os.path.join(out_dir, name), body) for name, body in artifacts.items()]
+    # iOS 内嵌副本：SwiftPM 资源必须在 target 目录内，引用不到 spec/。与 Android 构建期拷贝对位，
+    # 这里在抽取时同步写入；ResourceEmbedTests 断言两份逐字节一致
+    targets.append(("ios/…/runtime.min.json", IOS_RUNTIME, artifacts["runtime.min.json"]))
+    for name, path, body in targets:
         if args.check:
             if not os.path.isfile(path):
                 drift.append(f"{name}: spec/ 中不存在")
@@ -470,7 +477,7 @@ def main() -> int:
             if cur != body:
                 drift.append(f"{name}: 与重新抽取的结果不一致")
         else:
-            os.makedirs(out_dir, exist_ok=True)
+            os.makedirs(os.path.dirname(path), exist_ok=True)
             io.open(path, "w", encoding="utf-8", newline="").write(body)
             print(f"[extract] 写入 {name}  ({len(body.splitlines())} 行)")
 

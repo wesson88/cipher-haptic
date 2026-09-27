@@ -150,8 +150,23 @@ def rule_6(s: Spec) -> list[str]:
     return fails
 
 
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+KOTLIN_FACADE = os.path.join(ROOT, "android", "library", "src", "main", "kotlin",
+                             "com", "cipherlex", "haptic", "CipherHaptic.kt")
+SWIFT_FACADE = os.path.join(ROOT, "ios", "Sources", "CipherHaptic", "CipherHaptic.swift")
+SWIFT_SEMANTIC = os.path.join(ROOT, "ios", "Sources", "CipherHaptic", "PublicTypes.swift")
+
+
+def _read(path: str) -> str | None:
+    return io.open(path, encoding="utf-8").read() if os.path.isfile(path) else None
+
+
 def rule_7(s: Spec) -> list[str]:
-    """key 正则 + 派生无碰撞（枚举对拍需等原生代码就位）"""
+    """
+    ① key 正则 + 派生无碰撞；②③ 双端枚举 case 集合 = map(keys, 派生规则)，且 rawValue / id 就是 key。
+
+    ②③ 在 2026-09-27 之前一直没实现（审查 D3）——枚举对拍要等原生代码就位，而 iOS 此前没有代码。
+    """
     fails, camel, snake = [], {}, {}
     for k in s.semantics:
         if not KEY_RE.match(k):
@@ -162,6 +177,21 @@ def rule_7(s: Spec) -> list[str]:
             if m in d:
                 fails.append(f"{label} 标识符碰撞：{k} 与 {d[m]} 都派生出 {m}")
             d[m] = k
+
+    for label, path, pat, want in (
+        ("Swift", SWIFT_SEMANTIC, r'^\s*case (\w+) = "([a-z0-9.]+)"', camel),
+        ("Kotlin", KOTLIN_FACADE, r'^\s*([A-Z][A-Z0-9_]*)\("([a-z0-9.]+)"\)', snake),
+    ):
+        src = _read(path)
+        if src is None:
+            fails.append(f"{label} 语义枚举文件不存在：{os.path.relpath(path, ROOT)}")
+            continue
+        got = dict(re.findall(pat, src, re.M))
+        if got != want:
+            missing = sorted(set(want) - set(got))
+            extra = sorted(set(got) - set(want))
+            wrong = sorted(k for k in set(got) & set(want) if got[k] != want[k])
+            fails.append(f"{label} 语义枚举 ≠ semantics.yaml：缺 {missing} 多 {extra} 值不符 {wrong}")
     return fails
 
 
@@ -172,29 +202,34 @@ def rule_contract() -> list[str]:
     **以方法签名清单对拍，不以条目数对拍** —— 计数口径在这套文档里错过四次
     （9 / 12 / 13 / 19），根因都是把"能力条目"当"方法数"。签名是唯一不含糊的对拍单位。
 
-    iOS 侧待 Swift 骨架就位后接入同一函数。
+    - Swift：contracts.md 本身就是 iOS 形态 → **整行签名**精确匹配（空白归一化）。
+      此前只比方法名子串（审查 D7），参数标签 / 类型 / 返回值漂了也拦不住。
+    - Kotlin：签名语法不同，只比方法名（`fun name(`）。
     """
-    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    contracts = os.path.join(root, "spec", "contracts.md")
-    facade = os.path.join(root, "android", "library", "src", "main", "kotlin",
-                          "com", "cipherlex", "haptic", "CipherHaptic.kt")
+    contracts = os.path.join(ROOT, "spec", "contracts.md")
     if not os.path.isfile(contracts):
         return ["spec/contracts.md 不存在"]
-    if not os.path.isfile(facade):
-        return []
     c = io.open(contracts, encoding="utf-8").read()
-    k = io.open(facade, encoding="utf-8").read()
     rows = re.findall(r"^[|] (\d+) [|] `(.+?)`", c, re.M)
     if not rows:
         return ["contracts.md 未解析出任何签名行"]
+    norm = lambda x: re.sub(r"\s+", " ", x).strip()
     fails = []
+    k = _read(KOTLIN_FACADE)
+    swift = _read(SWIFT_FACADE)
+    swift_lines = {norm(re.sub(r"\s*\{.*$", "", ln)) for ln in (swift or "").splitlines()}
     for num, sig in rows:
         m = re.search(r"func (\w+)", sig)
         if not m:
             fails.append("contracts.md 第 %s 行解析不出方法名：%s" % (num, sig))
-        elif ("fun %s(" % m.group(1)) not in k:
+            continue
+        if k is not None and ("fun %s(" % m.group(1)) not in k:
             fails.append("Kotlin facade 缺方法 #%s %s()" % (num, m.group(1)))
-    return fails
+        if swift is None:
+            fails.append("Swift facade 不存在：%s" % os.path.relpath(SWIFT_FACADE, ROOT))
+        elif norm(sig) not in swift_lines:
+            fails.append("Swift facade 缺签名 #%s：%s" % (num, sig))
+    return sorted(set(fails), key=fails.index)
 
 
 def rule_8(s: Spec) -> list[str]:
@@ -394,7 +429,7 @@ def main() -> int:
     r.add("4", "events 升序且 sustain 不重叠", o45)
     r.add("5", "intensity/sharpness 值域", r45)
     r.add("6", "中立源生成的双端数组 == SSOT 手写镜像", rule_6(s))
-    r.add("7", "语义 key 正则 + 跨语言派生无碰撞", rule_7(s))
+    r.add("7", "语义 key 正则 + 派生无碰撞 + 双端枚举对拍", rule_7(s))
     r.add("8", "降级矩阵全覆盖", rule_8(s))
     r.add("CT", "contracts.md 签名 vs facade（骨架 §六.4①）", rule_contract())
     r.add("11", "category/protected 无双写漂移", rule_11(s))

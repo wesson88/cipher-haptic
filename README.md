@@ -13,12 +13,12 @@ CipherLex 生态专用的线性马达触觉渲染库 · iOS 13+ / Android API 29
 |---|---|
 | **W0–W1 · P0 真机验证 V1–V4** | ⬜ 未开始（需真机；出口条件 = `parity.yaml` 无 pending） |
 | 1. `spec/` + 抽取脚本 + IR schema 定型 | ✅ **完成** |
-| 2. iOS 骨架编译 + 单测 | ⬜ 需 macOS（Core Haptics 是 Apple 平台框架） |
-| 3. Android 骨架编译 + 单测 | ✅ **core + library 全通，55/55 测试** |
-| 4. `contract-check` 四件事 | ✅ Android 侧（规则 CT）；iOS 待 Swift |
-| 5. FSM 不变式 fuzz | ✅ 三份：Python / Kotlin 模拟资源 / Kotlin 真 handle |
-| 6. 双端行为等价测试 | 🟡 基准 + Android 半边就位，Swift 半边待 Mac |
-| 7. 调音台 demo | ✅ **`android/demo`，APK 可装** |
+| 2. iOS 骨架编译 + 单测 | ✅ **SwiftPM 包，CI macOS job：`swift test` + iOS 模拟器 `xcodebuild test`** |
+| 3. Android 骨架编译 + 单测 | ✅ **core + library 全通**（library 单测 JUnit5 + mockk） |
+| 4. `contract-check` 四件事 | ✅ 规则 CT：Swift 整行签名对拍、Kotlin 方法名对拍；规则 7：双端语义枚举对拍 |
+| 5. FSM 不变式 fuzz | ✅ Python / Kotlin / Swift 三端 runner，同一张迁移表、同一组断言 |
+| 6. 双端行为等价测试 | ✅ 同一个 `golden.json`：48 个 IR 用例（含 iOS 翻译）+ 224 个 Decision 用例，双端逐字段对拍 |
+| 7. 调音台 demo | ✅ **`android/demo`，APK 可装**；iOS 调音台 ⬜ |
 | 8–10 | ⬜ 真机驱动 / P0 验证 / 可运营化 |
 
 ## 交付形态
@@ -65,6 +65,14 @@ tools/
   check.py       CI 规则 + FSM 不变式 + contracts.md 签名对拍
   golden.py      从参考实现产出双端等价基准
   testreport.py  读 JUnit XML —— BUILD SUCCESSFUL 不等于测试跑过了
+
+Package.swift  SwiftPM 清单（放仓库根：按 Git URL 引用时只认根目录）
+ios/
+  Sources/CipherHapticCore/  纯 Swift，镜像 android/core：IR / SpecLoader / 降级 / 决策管线 / 抢占 / FSM /
+                             coalescer / 调度 / IR→CHHapticEvent 翻译（纯数据）。Resources/runtime.min.json 由 extract.py 同步
+  Sources/CipherHaptic/      平台层，镜像 android/library：facade（actor，17 方法）/ PlaybackHandle /
+                             EngineController（懒启动 + 自愈 + 熔断）/ Core Haptics 网关 / UIKit 回退（ERM_Z）
+  Tests/                     golden 对拍 + FSM fuzz + facade 回归（fake gateway，macOS 主机即可跑）
 
 android/
   core/          纯 Kotlin/JVM：语义解析 / 决策管线（纯函数 DecisionPipeline）/ 降级 / IR / FSM / 抢占
