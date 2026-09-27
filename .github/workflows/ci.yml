@@ -35,4 +35,11 @@ jobs:
           gradle-version: "8.14.3"
       - name: core 单测 + 库层单测（JUnit5 + mockk）+ demo 构建
         working-directory: android
-        run: gradle -I ../.github/ci.init.gradle :core:test :library:testDebugUnitTest :demo:assembleDebug --console=plain
+        # 公开仓库的 job 日志需鉴权才能读，annotation 不需要 —— 编译错误与失败用例转成 annotation
+        run: |
+          set -o pipefail
+          gradle -I ../.github/ci.init.gradle :core:test :library:testDebugUnitTest :demo:assembleDebug --console=plain --continue 2>&1 | tee build.log
+      - name: 失败详情转 annotation
+        if: failure()
+        working-directory: android
+        run: python3 ../.github/annotate.py build.log
