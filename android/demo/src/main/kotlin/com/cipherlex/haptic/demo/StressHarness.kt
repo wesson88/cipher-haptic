@@ -55,7 +55,7 @@ class StressHarness(
             when (rng.nextInt(10)) {
                 0, 1, 2, 3 -> haptic.playEffect(semantics[rng.nextInt(semantics.size)])
                 4 -> haptic.playEffect(semantics[rng.nextInt(semantics.size)], onNextFrame = true)
-                5 -> haptic.playLoopingEffect(semantics[rng.nextInt(semantics.size)])
+                5 -> haptic.playLoopingEffect(semantics[rng.nextInt(semantics.size)], maxDurationMs = 500L + rng.nextInt(3_000))
                 6 -> haptic.updateContinuousEffect(rng.nextFloat(), rng.nextFloat())
                 7 -> haptic.endContinuousEffect()      // 可能没有正在进行的通道 —— 故意的
                 8 -> haptic.stopAllEffects()

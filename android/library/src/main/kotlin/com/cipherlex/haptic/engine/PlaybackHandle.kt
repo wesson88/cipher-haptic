@@ -2,6 +2,8 @@ package com.cipherlex.haptic.engine
 
 import com.cipherlex.haptic.core.AndroidTranslator
 import com.cipherlex.haptic.core.ContinuousCoalescer
+import com.cipherlex.haptic.core.DecisionPipeline
+import com.cipherlex.haptic.core.ExpressionForm
 import com.cipherlex.haptic.core.HapticScheduler
 import com.cipherlex.haptic.core.LatencyProbe
 import com.cipherlex.haptic.core.MetricsCollector
@@ -35,8 +37,13 @@ class PlaybackHandle(
     private val scheduler: HapticScheduler,
     private val gateway: VibratorGateway,
     private val wakeLock: WakeLockGateway,
-    private val useComposition: Boolean,
-    private val maxLoopMs: Long = 300_000L,
+    /** 表达形式 —— 由管线第 ⑤ 步逐效果判定（[DecisionPipeline.expressionForm]），本类只照单执行 */
+    private val form: ExpressionForm,
+    /**
+     * 仅 looping：应用告知的循环时长（已按库上限截断），到期发 CANCEL。
+     * null 时按库上限兜底 —— 正常路径不会出现（管线对无时长的 looping 直接 drop）。
+     */
+    private val loopDeadlineMs: Long? = null,
     private val probe: LatencyProbe = LatencyProbe.NOOP,
     private val metrics: MetricsCollector? = null,
     private val onLog: (String) -> Unit = {},
@@ -128,7 +135,7 @@ class PlaybackHandle(
                 sendContinuous(i)
                 // 起播这一发绕过了 coalescer，必须补登记，否则节流从第二次才生效
                 coalescer.markSentAt(scheduler.nowMs())
-            } else if (useComposition) {
+            } else if (form == ExpressionForm.COMPOSITION) {
                 gateway.vibrateComposition(AndroidTranslator.toComposition(resolved))
             } else {
                 val w = AndroidTranslator.toWaveform(resolved)
@@ -175,11 +182,13 @@ class PlaybackHandle(
         endTimer = scheduler.schedule(resolved.totalDurationMs.toLong()) {
             fsm.send("NATURAL_END")
         }
-        // looping 的绝对上限：只排一次，不随每轮 resubmit 重置 —— 它拦的是
-        // "业务方忘了 cancel"，而不是单轮时长（见 CipherHaptic.MAX_LOOP_DURATION_MS）
+        // looping 的时长：由应用在 playLoopingEffect 告知（库兜底上限），只排一次，
+        // 不随每轮 resubmit 重置。每轮本身是有限波形，所以即使这个定时器因进程冻结没能触发，
+        // 平台侧也最多残留一轮（状态机 §4.7 方案 B）。
         if (resolved.kind == WaveKind.LOOPING && loopDeadline == null) {
-            loopDeadline = scheduler.schedule(maxLoopMs) {
-                onLog("looping 到达绝对上限 ${maxLoopMs}ms，强制结束 —— 业务方可能忘了 cancel")
+            val ms = loopDeadlineMs ?: DecisionPipeline.MAX_LOOP_DURATION_MS
+            loopDeadline = scheduler.schedule(ms) {
+                onLog("looping 到达应用告知的时长 ${ms}ms，结束")
                 fsm.send("CANCEL")
             }
         }

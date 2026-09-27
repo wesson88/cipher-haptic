@@ -17,8 +17,13 @@ object AndroidTranslator {
     data class Waveform(
         val timings: List<Int>,
         val amplitudes: List<Int>,
-        /** `createWaveform(timings, amplitudes, repeat)` 的第三参：-1 = 不循环 */
-        val repeat: Int,
+        /**
+         * `createWaveform(timings, amplitudes, repeat)` 的第三参。**本库恒为 -1**（只提交一轮）：
+         * looping 由引擎 end-timer 在 `totalDurationMs`（含 `loopGapMs`）到期后重提交下一轮
+         * （状态机 §4.7 方案 B，2026-09-27 定案）。平台级 `repeat=0` 曾与引擎 resubmit 并存，
+         * 造成双重循环、gap 丢失、ERM 档持续长震，且进程被冻结时停不下来（代码审查 A1–A3）。
+         */
+        val repeat: Int = -1,
     )
 
     data class Primitive(val type: String, val scale: Float, val delayMs: Int)
@@ -47,12 +52,14 @@ object AndroidTranslator {
             amps += Math.round(e.intensity * 255)          // P-13：量化误差 < 1/255
             cursor = e.atMs + e.durationMs
         }
-        return Waveform(timings, amps, if (rw.kind == WaveKind.LOOPING) 0 else -1)
+        return Waveform(timings, amps)
     }
 
     /**
      * IR → `Composition.addPrimitive` 的入参。
-     * 仅当全 pulse 且 API≥30 且 `areAllPrimitivesSupported` 通过（P-08 / P-15）。
+     * 走不走这条路由管线第 ⑤ 步判定（[DecisionPipeline.expressionForm]：全 pulse 且 API≥30 且
+     * `areAllPrimitivesSupported`，P-08 / P-15），这里只做翻译。`require` 是最后一道防线：
+     * 触发即说明有人绕过了管线。
      */
     fun toComposition(rw: ResolvedWaveform): List<Primitive> {
         require(rw.events.all { it.kind == EventKind.PULSE }) {

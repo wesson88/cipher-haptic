@@ -1,0 +1,38 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pyyaml
+      - name: CI 规则 + FSM 不变式 + fuzz
+        run: python -B tools/check.py --fuzz 20000
+      - name: golden 新鲜度（参考实现重生成后必须与仓库逐字节一致）
+        run: |
+          python tools/golden.py
+          git diff --exit-code -- spec/golden.json
+      # extract.py --check（vault → spec/ 逐字节对拍）需要本地 vault，CI 上跑不了；开发机提交前手动跑
+
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.14.3"
+      - name: core 单测 + 库层单测（JUnit5 + mockk）+ demo 构建
+        working-directory: android
+        run: gradle -I ../.github/ci.init.gradle :core:test :library:testDebugUnitTest :demo:assembleDebug --console=plain

@@ -24,6 +24,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from reference.loader import Spec                                     # noqa: E402
+from reference.pipeline import decide                                 # noqa: E402
 from reference.translate import (                                     # noqa: E402
     to_android_composition, to_android_waveform, to_ios_events,
 )
@@ -82,23 +83,46 @@ def main() -> int:
                         "idleTimeoutMs": c.idleTimeoutMs,
                     }
                 case["ios"] = to_ios_events(rw.events)
-                case["androidWaveform"] = to_android_waveform(
-                    rw.events, looping=(rw.kind == "looping"))
+                case["androidWaveform"] = to_android_waveform(rw.events)
                 if all(e.kind == "pulse" for e in rw.events) and rw.events:
                     case["androidComposition"] = to_android_composition(rw.events)
                 cases.append(case)
+
+    # ── Decision 用例（主文档 B.3 / 骨架 §3.3，v1.4.0）──────────────────
+    # drop 原因、表达形式、looping 时长这一层此前无法双端对拍；抢占由 PreemptionPolicy 单独覆盖。
+    base = {"masterEnabled": True, "systemHapticsEnabled": True, "mute": "none",
+            "globalScale": 1.0, "hardwareClass": "LINEAR_X_FULL", "compositionSupported": True}
+    ctxs = {
+        "base": base,
+        "noComposition": {**base, "compositionSupported": False},
+        # ERM 马达无振幅控制，真机上原语探测恒为 false —— 上下文保持与真实设备一致
+        "ermZ": {**base, "hardwareClass": "ERM_Z", "compositionSupported": False},
+        "masterOff": {**base, "masterEnabled": False},
+        "systemOff": {**base, "systemHapticsEnabled": False},
+        "dnd": {**base, "mute": "dnd"},
+        "hardwareMute": {**base, "mute": "hardware"},
+    }
+    loop_opts = [None, 2000, 0, 999_999]   # 非循环 API / 正常 / 非法时长 / 超上限截断
+    decisions = []
+    for sem in sorted(s.semantics):
+        for cname, ctx in ctxs.items():
+            for lo in loop_opts:
+                decisions.append({"semantic": sem, "ctx": cname, "loopMaxDurationMs": lo,
+                                  "decision": decide(s, sem, ctx, lo)})
 
     out = {
         "_generated": "由 tools/golden.py 从 reference/ 参考实现产出，禁止手改",
         "_note": "双端原生实现跑同一组输入，逐字段 diff；不符即构建失败",
         "cases": cases,
+        "decisionContexts": ctxs,
+        "decisions": decisions,
     }
     path = os.path.join(os.path.dirname(__file__), "..", "spec", "golden.json")
     io.open(path, "w", encoding="utf-8", newline="").write(
         json.dumps(out, ensure_ascii=False, indent=2, sort_keys=True) + "\n")
 
     drops = sum(1 for c in cases if "drop" in c)
-    print(f"[golden] {len(cases)} 个用例（其中 {drops} 个 drop）→ spec/golden.json")
+    print(f"[golden] {len(cases)} 个用例（其中 {drops} 个 drop）+ {len(decisions)} 个 Decision 用例 → spec/golden.json")
     return 0
 
 

@@ -67,7 +67,7 @@ class V3Receiver : BroadcastReceiver() {
         Log.i(TAG, "V3 start wakelock=${if (hold) "ON" else "OFF"} secs=$secs")
         // 必须用 kind=looping 的效果 —— kind 来自【效果数据】而非 API 调用，
         // 对 oneshot 效果调 playLoopingEffect 只会播一次（2026-08-02 实测发现）
-        token = h.playLoopingEffect(CipherHapticSemantic.SECURITY_ALARM)
+        token = h.playLoopingEffect(CipherHapticSemantic.SECURITY_ALARM, maxDurationMs = secs * 1_000L)
 
         android.os.Handler(context.mainLooper).postDelayed({
             token?.cancel()

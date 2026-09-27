@@ -9,7 +9,7 @@
 |---|---|
 | 1 | `public nonisolated func playEffect(_ s: CipherHapticSemantic)` |
 | 2 | `public nonisolated func playEffect(_ s: CipherHapticSemantic, onNextFrame: Bool)` |
-| 3 | `public nonisolated func playLoopingEffect(_ s: CipherHapticSemantic) -> CipherHapticCancelToken` |
+| 3 | `public nonisolated func playLoopingEffect(_ s: CipherHapticSemantic, maxDurationMs: Int) -> CipherHapticCancelToken` |
 | 4 | `public nonisolated func stopAllEffects()` |
 | 5 | `public nonisolated func updateContinuousEffect(intensity: Float, sharpness: Float)` |
 | 6 | `public nonisolated func endContinuousEffect()` |

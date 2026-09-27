@@ -3,7 +3,7 @@
 CipherLex 生态专用的线性马达触觉渲染库 · iOS 13+ / Android API 29+
 
 设计文档是本仓库的 **SSOT（唯一写入点）**，位于 vault：
-`D:\wiki\general-os-system\20-知识\项目记录\触觉引擎CipherHaptic-*.md`（9 篇）。
+`D:\MarkDown\memory\adam\20-知识\项目记录\CipherLex\触觉引擎CipherHaptic-*.md`（10 篇）。
 
 ---
 
@@ -47,12 +47,12 @@ CipherLex 生态专用的线性马达触觉渲染库 · iOS 13+ / Android API 29
 ```
 spec/          ★ 生成产物,禁止手改 —— 由 tools/extract.py 从 vault 单向生成
   contracts.md      17 方法签名基准（← 工程骨架 §3.1）
-  semantics.yaml    7 个语义 token（← 语义层与中立IR §2.2）
-  effects.yaml      7 个效果波形（← 波形数据SSOT §二）
+  semantics.yaml    8 个语义 token（← 语义层与中立IR §2.2）
+  effects.yaml      8 个效果波形（← 波形数据SSOT §二）
   runtime.min.json  ★ 各端【真正内嵌】的产物，8.0 KB —— 无 parity、无双端镜像、已归一化为 IR
-  degradation.yaml  7×3=21 格 + 8 个 action（← 波形数据SSOT §三/§3.1）
+  degradation.yaml  8×3=24 格 + 8 个 action（← 波形数据SSOT §三/§3.1）
   transitions.yaml  8 态 10 事件（← 句柄状态机 §十）
-  parity.yaml       20 条双端差异（← 双端差异登记表 §四）
+  parity.yaml       21 条双端差异（← 双端差异登记表 §四）
 
 reference/     参考实现（Python）—— 不参与运行时
   model.py       IR 类型 + validate()
@@ -67,7 +67,7 @@ tools/
   testreport.py  读 JUnit XML —— BUILD SUCCESSFUL 不等于测试跑过了
 
 android/
-  core/          纯 Kotlin/JVM：语义解析 / 决策管线 / 降级 / IR / FSM / 抢占
+  core/          纯 Kotlin/JVM：语义解析 / 决策管线（纯函数 DecisionPipeline）/ 降级 / IR / FSM / 抢占
   library/       com.android.library：engine 接缝 + 平台桥 + facade（17 方法）
   demo/          调音台（主文档 B.9）—— 不参与发布产物
 ```

@@ -622,15 +622,15 @@
       "verify": null
     },
     "P-17": {
-      "android": "`createWaveform(repeat = index)`",
+      "android": "每轮 `createWaveform(repeat = -1)` 有限提交，引擎 end-timer 重提交（v1.4.0 起不用平台级 repeat）",
       "class": "A",
-      "ios": "pattern 层 repeat",
+      "ios": "每轮一个有限 pattern（不用 pattern 层 loop）",
       "metric": null,
       "residual": "无",
-      "resolution": "IR 用 `kind: looping` + `loopGapMs`，各端翻译",
+      "resolution": "IR 用 `kind: looping` + `loopGapMs`，间隔由 end-timer 表达，双端同构",
       "status": "verified",
       "title": "循环实现",
-      "verify": "双端等价测试"
+      "verify": "双端等价测试 + facade 循环用例"
     },
     "P-18": {
       "android": "需 `VIBRATE` 权限",

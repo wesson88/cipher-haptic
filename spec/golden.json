@@ -1686,6 +1686,406 @@
         "degradeTrace": [
           "forced_amplitude"
         ],
+        "effectId": "security_alarm_loop",
+        "events": [
+          {
+            "atMs": 0,
+            "durationMs": 200,
+            "intensity": 1.0,
+            "kind": "pulse",
+            "sharpness": 0.0
+          }
+        ],
+        "kind": "looping",
+        "loopGapMs": 400,
+        "protected": true,
+        "semanticId": "security.alarm",
+        "totalDurationMs": 600
+      },
+      "semantic": "security.alarm"
+    },
+    {
+      "androidComposition": {
+        "primitives": [
+          {
+            "delay_ms": 0,
+            "scale": 1.0,
+            "type": "PRIMITIVE_CLICK"
+          }
+        ]
+      },
+      "androidWaveform": {
+        "amplitudes": [
+          255
+        ],
+        "repeat": -1,
+        "timings_ms": [
+          200
+        ]
+      },
+      "globalScale": 0.5,
+      "hardwareClass": "ERM_Z",
+      "ios": [
+        {
+          "eventType": "hapticTransient",
+          "intensity": 1.0,
+          "relativeTime": 0.0,
+          "sharpness": 0.0
+        }
+      ],
+      "ir": {
+        "category": "critical",
+        "degradeTrace": [
+          "forced_amplitude"
+        ],
+        "effectId": "security_alarm_loop",
+        "events": [
+          {
+            "atMs": 0,
+            "durationMs": 200,
+            "intensity": 1.0,
+            "kind": "pulse",
+            "sharpness": 0.0
+          }
+        ],
+        "kind": "looping",
+        "loopGapMs": 400,
+        "protected": true,
+        "semanticId": "security.alarm",
+        "totalDurationMs": 600
+      },
+      "semantic": "security.alarm"
+    },
+    {
+      "androidComposition": {
+        "primitives": [
+          {
+            "delay_ms": 0,
+            "scale": 1.0,
+            "type": "PRIMITIVE_CLICK"
+          },
+          {
+            "delay_ms": 120,
+            "scale": 1.0,
+            "type": "PRIMITIVE_CLICK"
+          }
+        ]
+      },
+      "androidWaveform": {
+        "amplitudes": [
+          255,
+          0,
+          255
+        ],
+        "repeat": -1,
+        "timings_ms": [
+          30,
+          90,
+          30
+        ]
+      },
+      "globalScale": 1.0,
+      "hardwareClass": "LINEAR_X_LIMITED",
+      "ios": [
+        {
+          "eventType": "hapticTransient",
+          "intensity": 1.0,
+          "relativeTime": 0.0,
+          "sharpness": 0.9
+        },
+        {
+          "eventType": "hapticTransient",
+          "intensity": 1.0,
+          "relativeTime": 0.12,
+          "sharpness": 0.9
+        }
+      ],
+      "ir": {
+        "category": "critical",
+        "degradeTrace": [
+          "n_pulses"
+        ],
+        "effectId": "security_alarm_loop",
+        "events": [
+          {
+            "atMs": 0,
+            "durationMs": 30,
+            "intensity": 1.0,
+            "kind": "pulse",
+            "sharpness": 0.9
+          },
+          {
+            "atMs": 120,
+            "durationMs": 30,
+            "intensity": 1.0,
+            "kind": "pulse",
+            "sharpness": 0.9
+          }
+        ],
+        "kind": "looping",
+        "loopGapMs": 400,
+        "protected": true,
+        "semanticId": "security.alarm",
+        "totalDurationMs": 550
+      },
+      "semantic": "security.alarm"
+    },
+    {
+      "androidComposition": {
+        "primitives": [
+          {
+            "delay_ms": 0,
+            "scale": 0.5,
+            "type": "PRIMITIVE_CLICK"
+          },
+          {
+            "delay_ms": 120,
+            "scale": 0.5,
+            "type": "PRIMITIVE_CLICK"
+          }
+        ]
+      },
+      "androidWaveform": {
+        "amplitudes": [
+          128,
+          0,
+          128
+        ],
+        "repeat": -1,
+        "timings_ms": [
+          30,
+          90,
+          30
+        ]
+      },
+      "globalScale": 0.5,
+      "hardwareClass": "LINEAR_X_LIMITED",
+      "ios": [
+        {
+          "eventType": "hapticTransient",
+          "intensity": 0.5,
+          "relativeTime": 0.0,
+          "sharpness": 0.9
+        },
+        {
+          "eventType": "hapticTransient",
+          "intensity": 0.5,
+          "relativeTime": 0.12,
+          "sharpness": 0.9
+        }
+      ],
+      "ir": {
+        "category": "critical",
+        "degradeTrace": [
+          "n_pulses"
+        ],
+        "effectId": "security_alarm_loop",
+        "events": [
+          {
+            "atMs": 0,
+            "durationMs": 30,
+            "intensity": 0.5,
+            "kind": "pulse",
+            "sharpness": 0.9
+          },
+          {
+            "atMs": 120,
+            "durationMs": 30,
+            "intensity": 0.5,
+            "kind": "pulse",
+            "sharpness": 0.9
+          }
+        ],
+        "kind": "looping",
+        "loopGapMs": 400,
+        "protected": true,
+        "semanticId": "security.alarm",
+        "totalDurationMs": 550
+      },
+      "semantic": "security.alarm"
+    },
+    {
+      "androidComposition": {
+        "primitives": [
+          {
+            "delay_ms": 0,
+            "scale": 1.0,
+            "type": "PRIMITIVE_CLICK"
+          },
+          {
+            "delay_ms": 90,
+            "scale": 1.0,
+            "type": "PRIMITIVE_CLICK"
+          }
+        ]
+      },
+      "androidWaveform": {
+        "amplitudes": [
+          255,
+          0,
+          255
+        ],
+        "repeat": -1,
+        "timings_ms": [
+          30,
+          60,
+          30
+        ]
+      },
+      "globalScale": 1.0,
+      "hardwareClass": "LINEAR_X_FULL",
+      "ios": [
+        {
+          "eventType": "hapticTransient",
+          "intensity": 1.0,
+          "relativeTime": 0.0,
+          "sharpness": 0.9
+        },
+        {
+          "eventType": "hapticTransient",
+          "intensity": 1.0,
+          "relativeTime": 0.09,
+          "sharpness": 0.9
+        }
+      ],
+      "ir": {
+        "category": "critical",
+        "degradeTrace": [
+          "full"
+        ],
+        "effectId": "security_alarm_loop",
+        "events": [
+          {
+            "atMs": 0,
+            "durationMs": 30,
+            "intensity": 1.0,
+            "kind": "pulse",
+            "sharpness": 0.9
+          },
+          {
+            "atMs": 90,
+            "durationMs": 30,
+            "intensity": 1.0,
+            "kind": "pulse",
+            "sharpness": 0.9
+          }
+        ],
+        "kind": "looping",
+        "loopGapMs": 400,
+        "protected": true,
+        "semanticId": "security.alarm",
+        "totalDurationMs": 520
+      },
+      "semantic": "security.alarm"
+    },
+    {
+      "androidComposition": {
+        "primitives": [
+          {
+            "delay_ms": 0,
+            "scale": 0.5,
+            "type": "PRIMITIVE_CLICK"
+          },
+          {
+            "delay_ms": 90,
+            "scale": 0.5,
+            "type": "PRIMITIVE_CLICK"
+          }
+        ]
+      },
+      "androidWaveform": {
+        "amplitudes": [
+          128,
+          0,
+          128
+        ],
+        "repeat": -1,
+        "timings_ms": [
+          30,
+          60,
+          30
+        ]
+      },
+      "globalScale": 0.5,
+      "hardwareClass": "LINEAR_X_FULL",
+      "ios": [
+        {
+          "eventType": "hapticTransient",
+          "intensity": 0.5,
+          "relativeTime": 0.0,
+          "sharpness": 0.9
+        },
+        {
+          "eventType": "hapticTransient",
+          "intensity": 0.5,
+          "relativeTime": 0.09,
+          "sharpness": 0.9
+        }
+      ],
+      "ir": {
+        "category": "critical",
+        "degradeTrace": [
+          "full"
+        ],
+        "effectId": "security_alarm_loop",
+        "events": [
+          {
+            "atMs": 0,
+            "durationMs": 30,
+            "intensity": 0.5,
+            "kind": "pulse",
+            "sharpness": 0.9
+          },
+          {
+            "atMs": 90,
+            "durationMs": 30,
+            "intensity": 0.5,
+            "kind": "pulse",
+            "sharpness": 0.9
+          }
+        ],
+        "kind": "looping",
+        "loopGapMs": 400,
+        "protected": true,
+        "semanticId": "security.alarm",
+        "totalDurationMs": 520
+      },
+      "semantic": "security.alarm"
+    },
+    {
+      "androidComposition": {
+        "primitives": [
+          {
+            "delay_ms": 0,
+            "scale": 1.0,
+            "type": "PRIMITIVE_CLICK"
+          }
+        ]
+      },
+      "androidWaveform": {
+        "amplitudes": [
+          255
+        ],
+        "repeat": -1,
+        "timings_ms": [
+          200
+        ]
+      },
+      "globalScale": 1.0,
+      "hardwareClass": "ERM_Z",
+      "ios": [
+        {
+          "eventType": "hapticTransient",
+          "intensity": 1.0,
+          "relativeTime": 0.0,
+          "sharpness": 0.0
+        }
+      ],
+      "ir": {
+        "category": "critical",
+        "degradeTrace": [
+          "forced_amplitude"
+        ],
         "effectId": "anti_screenshot",
         "events": [
           {
@@ -2494,6 +2894,2234 @@
         "semanticId": "selection.snap",
         "totalDurationMs": 60
       },
+      "semantic": "selection.snap"
+    }
+  ],
+  "decisionContexts": {
+    "base": {
+      "compositionSupported": true,
+      "globalScale": 1.0,
+      "hardwareClass": "LINEAR_X_FULL",
+      "masterEnabled": true,
+      "mute": "none",
+      "systemHapticsEnabled": true
+    },
+    "dnd": {
+      "compositionSupported": true,
+      "globalScale": 1.0,
+      "hardwareClass": "LINEAR_X_FULL",
+      "masterEnabled": true,
+      "mute": "dnd",
+      "systemHapticsEnabled": true
+    },
+    "ermZ": {
+      "compositionSupported": false,
+      "globalScale": 1.0,
+      "hardwareClass": "ERM_Z",
+      "masterEnabled": true,
+      "mute": "none",
+      "systemHapticsEnabled": true
+    },
+    "hardwareMute": {
+      "compositionSupported": true,
+      "globalScale": 1.0,
+      "hardwareClass": "LINEAR_X_FULL",
+      "masterEnabled": true,
+      "mute": "hardware",
+      "systemHapticsEnabled": true
+    },
+    "masterOff": {
+      "compositionSupported": true,
+      "globalScale": 1.0,
+      "hardwareClass": "LINEAR_X_FULL",
+      "masterEnabled": false,
+      "mute": "none",
+      "systemHapticsEnabled": true
+    },
+    "noComposition": {
+      "compositionSupported": false,
+      "globalScale": 1.0,
+      "hardwareClass": "LINEAR_X_FULL",
+      "masterEnabled": true,
+      "mute": "none",
+      "systemHapticsEnabled": true
+    },
+    "systemOff": {
+      "compositionSupported": true,
+      "globalScale": 1.0,
+      "hardwareClass": "LINEAR_X_FULL",
+      "masterEnabled": true,
+      "mute": "none",
+      "systemHapticsEnabled": false
+    }
+  },
+  "decisions": [
+    {
+      "ctx": "base",
+      "decision": {
+        "play": {
+          "effectId": "default_ui_click",
+          "form": "composition",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": null,
+      "semantic": "control.tap"
+    },
+    {
+      "ctx": "base",
+      "decision": {
+        "play": {
+          "effectId": "default_ui_click",
+          "form": "composition",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 2000,
+      "semantic": "control.tap"
+    },
+    {
+      "ctx": "base",
+      "decision": {
+        "play": {
+          "effectId": "default_ui_click",
+          "form": "composition",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 0,
+      "semantic": "control.tap"
+    },
+    {
+      "ctx": "base",
+      "decision": {
+        "play": {
+          "effectId": "default_ui_click",
+          "form": "composition",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 999999,
+      "semantic": "control.tap"
+    },
+    {
+      "ctx": "noComposition",
+      "decision": {
+        "play": {
+          "effectId": "default_ui_click",
+          "form": "waveform",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": null,
+      "semantic": "control.tap"
+    },
+    {
+      "ctx": "noComposition",
+      "decision": {
+        "play": {
+          "effectId": "default_ui_click",
+          "form": "waveform",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 2000,
+      "semantic": "control.tap"
+    },
+    {
+      "ctx": "noComposition",
+      "decision": {
+        "play": {
+          "effectId": "default_ui_click",
+          "form": "waveform",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 0,
+      "semantic": "control.tap"
+    },
+    {
+      "ctx": "noComposition",
+      "decision": {
+        "play": {
+          "effectId": "default_ui_click",
+          "form": "waveform",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 999999,
+      "semantic": "control.tap"
+    },
+    {
+      "ctx": "ermZ",
+      "decision": {
+        "drop": "degraded-to-silent"
+      },
+      "loopMaxDurationMs": null,
+      "semantic": "control.tap"
+    },
+    {
+      "ctx": "ermZ",
+      "decision": {
+        "drop": "degraded-to-silent"
+      },
+      "loopMaxDurationMs": 2000,
+      "semantic": "control.tap"
+    },
+    {
+      "ctx": "ermZ",
+      "decision": {
+        "drop": "degraded-to-silent"
+      },
+      "loopMaxDurationMs": 0,
+      "semantic": "control.tap"
+    },
+    {
+      "ctx": "ermZ",
+      "decision": {
+        "drop": "degraded-to-silent"
+      },
+      "loopMaxDurationMs": 999999,
+      "semantic": "control.tap"
+    },
+    {
+      "ctx": "masterOff",
+      "decision": {
+        "drop": "disabled"
+      },
+      "loopMaxDurationMs": null,
+      "semantic": "control.tap"
+    },
+    {
+      "ctx": "masterOff",
+      "decision": {
+        "drop": "disabled"
+      },
+      "loopMaxDurationMs": 2000,
+      "semantic": "control.tap"
+    },
+    {
+      "ctx": "masterOff",
+      "decision": {
+        "drop": "disabled"
+      },
+      "loopMaxDurationMs": 0,
+      "semantic": "control.tap"
+    },
+    {
+      "ctx": "masterOff",
+      "decision": {
+        "drop": "disabled"
+      },
+      "loopMaxDurationMs": 999999,
+      "semantic": "control.tap"
+    },
+    {
+      "ctx": "systemOff",
+      "decision": {
+        "drop": "system-off"
+      },
+      "loopMaxDurationMs": null,
+      "semantic": "control.tap"
+    },
+    {
+      "ctx": "systemOff",
+      "decision": {
+        "drop": "system-off"
+      },
+      "loopMaxDurationMs": 2000,
+      "semantic": "control.tap"
+    },
+    {
+      "ctx": "systemOff",
+      "decision": {
+        "drop": "system-off"
+      },
+      "loopMaxDurationMs": 0,
+      "semantic": "control.tap"
+    },
+    {
+      "ctx": "systemOff",
+      "decision": {
+        "drop": "system-off"
+      },
+      "loopMaxDurationMs": 999999,
+      "semantic": "control.tap"
+    },
+    {
+      "ctx": "dnd",
+      "decision": {
+        "drop": "dnd"
+      },
+      "loopMaxDurationMs": null,
+      "semantic": "control.tap"
+    },
+    {
+      "ctx": "dnd",
+      "decision": {
+        "drop": "dnd"
+      },
+      "loopMaxDurationMs": 2000,
+      "semantic": "control.tap"
+    },
+    {
+      "ctx": "dnd",
+      "decision": {
+        "drop": "dnd"
+      },
+      "loopMaxDurationMs": 0,
+      "semantic": "control.tap"
+    },
+    {
+      "ctx": "dnd",
+      "decision": {
+        "drop": "dnd"
+      },
+      "loopMaxDurationMs": 999999,
+      "semantic": "control.tap"
+    },
+    {
+      "ctx": "hardwareMute",
+      "decision": {
+        "drop": "hardware-mute"
+      },
+      "loopMaxDurationMs": null,
+      "semantic": "control.tap"
+    },
+    {
+      "ctx": "hardwareMute",
+      "decision": {
+        "drop": "hardware-mute"
+      },
+      "loopMaxDurationMs": 2000,
+      "semantic": "control.tap"
+    },
+    {
+      "ctx": "hardwareMute",
+      "decision": {
+        "drop": "hardware-mute"
+      },
+      "loopMaxDurationMs": 0,
+      "semantic": "control.tap"
+    },
+    {
+      "ctx": "hardwareMute",
+      "decision": {
+        "drop": "hardware-mute"
+      },
+      "loopMaxDurationMs": 999999,
+      "semantic": "control.tap"
+    },
+    {
+      "ctx": "base",
+      "decision": {
+        "play": {
+          "effectId": "gesture_continuous",
+          "form": "waveform",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": null,
+      "semantic": "gesture.track"
+    },
+    {
+      "ctx": "base",
+      "decision": {
+        "play": {
+          "effectId": "gesture_continuous",
+          "form": "waveform",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 2000,
+      "semantic": "gesture.track"
+    },
+    {
+      "ctx": "base",
+      "decision": {
+        "play": {
+          "effectId": "gesture_continuous",
+          "form": "waveform",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 0,
+      "semantic": "gesture.track"
+    },
+    {
+      "ctx": "base",
+      "decision": {
+        "play": {
+          "effectId": "gesture_continuous",
+          "form": "waveform",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 999999,
+      "semantic": "gesture.track"
+    },
+    {
+      "ctx": "noComposition",
+      "decision": {
+        "play": {
+          "effectId": "gesture_continuous",
+          "form": "waveform",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": null,
+      "semantic": "gesture.track"
+    },
+    {
+      "ctx": "noComposition",
+      "decision": {
+        "play": {
+          "effectId": "gesture_continuous",
+          "form": "waveform",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 2000,
+      "semantic": "gesture.track"
+    },
+    {
+      "ctx": "noComposition",
+      "decision": {
+        "play": {
+          "effectId": "gesture_continuous",
+          "form": "waveform",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 0,
+      "semantic": "gesture.track"
+    },
+    {
+      "ctx": "noComposition",
+      "decision": {
+        "play": {
+          "effectId": "gesture_continuous",
+          "form": "waveform",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 999999,
+      "semantic": "gesture.track"
+    },
+    {
+      "ctx": "ermZ",
+      "decision": {
+        "drop": "degraded-to-silent"
+      },
+      "loopMaxDurationMs": null,
+      "semantic": "gesture.track"
+    },
+    {
+      "ctx": "ermZ",
+      "decision": {
+        "drop": "degraded-to-silent"
+      },
+      "loopMaxDurationMs": 2000,
+      "semantic": "gesture.track"
+    },
+    {
+      "ctx": "ermZ",
+      "decision": {
+        "drop": "degraded-to-silent"
+      },
+      "loopMaxDurationMs": 0,
+      "semantic": "gesture.track"
+    },
+    {
+      "ctx": "ermZ",
+      "decision": {
+        "drop": "degraded-to-silent"
+      },
+      "loopMaxDurationMs": 999999,
+      "semantic": "gesture.track"
+    },
+    {
+      "ctx": "masterOff",
+      "decision": {
+        "drop": "disabled"
+      },
+      "loopMaxDurationMs": null,
+      "semantic": "gesture.track"
+    },
+    {
+      "ctx": "masterOff",
+      "decision": {
+        "drop": "disabled"
+      },
+      "loopMaxDurationMs": 2000,
+      "semantic": "gesture.track"
+    },
+    {
+      "ctx": "masterOff",
+      "decision": {
+        "drop": "disabled"
+      },
+      "loopMaxDurationMs": 0,
+      "semantic": "gesture.track"
+    },
+    {
+      "ctx": "masterOff",
+      "decision": {
+        "drop": "disabled"
+      },
+      "loopMaxDurationMs": 999999,
+      "semantic": "gesture.track"
+    },
+    {
+      "ctx": "systemOff",
+      "decision": {
+        "drop": "system-off"
+      },
+      "loopMaxDurationMs": null,
+      "semantic": "gesture.track"
+    },
+    {
+      "ctx": "systemOff",
+      "decision": {
+        "drop": "system-off"
+      },
+      "loopMaxDurationMs": 2000,
+      "semantic": "gesture.track"
+    },
+    {
+      "ctx": "systemOff",
+      "decision": {
+        "drop": "system-off"
+      },
+      "loopMaxDurationMs": 0,
+      "semantic": "gesture.track"
+    },
+    {
+      "ctx": "systemOff",
+      "decision": {
+        "drop": "system-off"
+      },
+      "loopMaxDurationMs": 999999,
+      "semantic": "gesture.track"
+    },
+    {
+      "ctx": "dnd",
+      "decision": {
+        "drop": "dnd"
+      },
+      "loopMaxDurationMs": null,
+      "semantic": "gesture.track"
+    },
+    {
+      "ctx": "dnd",
+      "decision": {
+        "drop": "dnd"
+      },
+      "loopMaxDurationMs": 2000,
+      "semantic": "gesture.track"
+    },
+    {
+      "ctx": "dnd",
+      "decision": {
+        "drop": "dnd"
+      },
+      "loopMaxDurationMs": 0,
+      "semantic": "gesture.track"
+    },
+    {
+      "ctx": "dnd",
+      "decision": {
+        "drop": "dnd"
+      },
+      "loopMaxDurationMs": 999999,
+      "semantic": "gesture.track"
+    },
+    {
+      "ctx": "hardwareMute",
+      "decision": {
+        "drop": "hardware-mute"
+      },
+      "loopMaxDurationMs": null,
+      "semantic": "gesture.track"
+    },
+    {
+      "ctx": "hardwareMute",
+      "decision": {
+        "drop": "hardware-mute"
+      },
+      "loopMaxDurationMs": 2000,
+      "semantic": "gesture.track"
+    },
+    {
+      "ctx": "hardwareMute",
+      "decision": {
+        "drop": "hardware-mute"
+      },
+      "loopMaxDurationMs": 0,
+      "semantic": "gesture.track"
+    },
+    {
+      "ctx": "hardwareMute",
+      "decision": {
+        "drop": "hardware-mute"
+      },
+      "loopMaxDurationMs": 999999,
+      "semantic": "gesture.track"
+    },
+    {
+      "ctx": "base",
+      "decision": {
+        "play": {
+          "effectId": "ticket_rip",
+          "form": "waveform",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": null,
+      "semantic": "item.detach"
+    },
+    {
+      "ctx": "base",
+      "decision": {
+        "play": {
+          "effectId": "ticket_rip",
+          "form": "waveform",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 2000,
+      "semantic": "item.detach"
+    },
+    {
+      "ctx": "base",
+      "decision": {
+        "play": {
+          "effectId": "ticket_rip",
+          "form": "waveform",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 0,
+      "semantic": "item.detach"
+    },
+    {
+      "ctx": "base",
+      "decision": {
+        "play": {
+          "effectId": "ticket_rip",
+          "form": "waveform",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 999999,
+      "semantic": "item.detach"
+    },
+    {
+      "ctx": "noComposition",
+      "decision": {
+        "play": {
+          "effectId": "ticket_rip",
+          "form": "waveform",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": null,
+      "semantic": "item.detach"
+    },
+    {
+      "ctx": "noComposition",
+      "decision": {
+        "play": {
+          "effectId": "ticket_rip",
+          "form": "waveform",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 2000,
+      "semantic": "item.detach"
+    },
+    {
+      "ctx": "noComposition",
+      "decision": {
+        "play": {
+          "effectId": "ticket_rip",
+          "form": "waveform",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 0,
+      "semantic": "item.detach"
+    },
+    {
+      "ctx": "noComposition",
+      "decision": {
+        "play": {
+          "effectId": "ticket_rip",
+          "form": "waveform",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 999999,
+      "semantic": "item.detach"
+    },
+    {
+      "ctx": "ermZ",
+      "decision": {
+        "play": {
+          "effectId": "ticket_rip",
+          "form": "waveform",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": null,
+      "semantic": "item.detach"
+    },
+    {
+      "ctx": "ermZ",
+      "decision": {
+        "play": {
+          "effectId": "ticket_rip",
+          "form": "waveform",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 2000,
+      "semantic": "item.detach"
+    },
+    {
+      "ctx": "ermZ",
+      "decision": {
+        "play": {
+          "effectId": "ticket_rip",
+          "form": "waveform",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 0,
+      "semantic": "item.detach"
+    },
+    {
+      "ctx": "ermZ",
+      "decision": {
+        "play": {
+          "effectId": "ticket_rip",
+          "form": "waveform",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 999999,
+      "semantic": "item.detach"
+    },
+    {
+      "ctx": "masterOff",
+      "decision": {
+        "drop": "disabled"
+      },
+      "loopMaxDurationMs": null,
+      "semantic": "item.detach"
+    },
+    {
+      "ctx": "masterOff",
+      "decision": {
+        "drop": "disabled"
+      },
+      "loopMaxDurationMs": 2000,
+      "semantic": "item.detach"
+    },
+    {
+      "ctx": "masterOff",
+      "decision": {
+        "drop": "disabled"
+      },
+      "loopMaxDurationMs": 0,
+      "semantic": "item.detach"
+    },
+    {
+      "ctx": "masterOff",
+      "decision": {
+        "drop": "disabled"
+      },
+      "loopMaxDurationMs": 999999,
+      "semantic": "item.detach"
+    },
+    {
+      "ctx": "systemOff",
+      "decision": {
+        "drop": "system-off"
+      },
+      "loopMaxDurationMs": null,
+      "semantic": "item.detach"
+    },
+    {
+      "ctx": "systemOff",
+      "decision": {
+        "drop": "system-off"
+      },
+      "loopMaxDurationMs": 2000,
+      "semantic": "item.detach"
+    },
+    {
+      "ctx": "systemOff",
+      "decision": {
+        "drop": "system-off"
+      },
+      "loopMaxDurationMs": 0,
+      "semantic": "item.detach"
+    },
+    {
+      "ctx": "systemOff",
+      "decision": {
+        "drop": "system-off"
+      },
+      "loopMaxDurationMs": 999999,
+      "semantic": "item.detach"
+    },
+    {
+      "ctx": "dnd",
+      "decision": {
+        "drop": "dnd"
+      },
+      "loopMaxDurationMs": null,
+      "semantic": "item.detach"
+    },
+    {
+      "ctx": "dnd",
+      "decision": {
+        "drop": "dnd"
+      },
+      "loopMaxDurationMs": 2000,
+      "semantic": "item.detach"
+    },
+    {
+      "ctx": "dnd",
+      "decision": {
+        "drop": "dnd"
+      },
+      "loopMaxDurationMs": 0,
+      "semantic": "item.detach"
+    },
+    {
+      "ctx": "dnd",
+      "decision": {
+        "drop": "dnd"
+      },
+      "loopMaxDurationMs": 999999,
+      "semantic": "item.detach"
+    },
+    {
+      "ctx": "hardwareMute",
+      "decision": {
+        "drop": "hardware-mute"
+      },
+      "loopMaxDurationMs": null,
+      "semantic": "item.detach"
+    },
+    {
+      "ctx": "hardwareMute",
+      "decision": {
+        "drop": "hardware-mute"
+      },
+      "loopMaxDurationMs": 2000,
+      "semantic": "item.detach"
+    },
+    {
+      "ctx": "hardwareMute",
+      "decision": {
+        "drop": "hardware-mute"
+      },
+      "loopMaxDurationMs": 0,
+      "semantic": "item.detach"
+    },
+    {
+      "ctx": "hardwareMute",
+      "decision": {
+        "drop": "hardware-mute"
+      },
+      "loopMaxDurationMs": 999999,
+      "semantic": "item.detach"
+    },
+    {
+      "ctx": "base",
+      "decision": {
+        "play": {
+          "effectId": "glitch_dissolve",
+          "form": "composition",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": null,
+      "semantic": "item.dissolve"
+    },
+    {
+      "ctx": "base",
+      "decision": {
+        "play": {
+          "effectId": "glitch_dissolve",
+          "form": "composition",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 2000,
+      "semantic": "item.dissolve"
+    },
+    {
+      "ctx": "base",
+      "decision": {
+        "play": {
+          "effectId": "glitch_dissolve",
+          "form": "composition",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 0,
+      "semantic": "item.dissolve"
+    },
+    {
+      "ctx": "base",
+      "decision": {
+        "play": {
+          "effectId": "glitch_dissolve",
+          "form": "composition",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 999999,
+      "semantic": "item.dissolve"
+    },
+    {
+      "ctx": "noComposition",
+      "decision": {
+        "play": {
+          "effectId": "glitch_dissolve",
+          "form": "waveform",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": null,
+      "semantic": "item.dissolve"
+    },
+    {
+      "ctx": "noComposition",
+      "decision": {
+        "play": {
+          "effectId": "glitch_dissolve",
+          "form": "waveform",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 2000,
+      "semantic": "item.dissolve"
+    },
+    {
+      "ctx": "noComposition",
+      "decision": {
+        "play": {
+          "effectId": "glitch_dissolve",
+          "form": "waveform",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 0,
+      "semantic": "item.dissolve"
+    },
+    {
+      "ctx": "noComposition",
+      "decision": {
+        "play": {
+          "effectId": "glitch_dissolve",
+          "form": "waveform",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 999999,
+      "semantic": "item.dissolve"
+    },
+    {
+      "ctx": "ermZ",
+      "decision": {
+        "play": {
+          "effectId": "glitch_dissolve",
+          "form": "waveform",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": null,
+      "semantic": "item.dissolve"
+    },
+    {
+      "ctx": "ermZ",
+      "decision": {
+        "play": {
+          "effectId": "glitch_dissolve",
+          "form": "waveform",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 2000,
+      "semantic": "item.dissolve"
+    },
+    {
+      "ctx": "ermZ",
+      "decision": {
+        "play": {
+          "effectId": "glitch_dissolve",
+          "form": "waveform",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 0,
+      "semantic": "item.dissolve"
+    },
+    {
+      "ctx": "ermZ",
+      "decision": {
+        "play": {
+          "effectId": "glitch_dissolve",
+          "form": "waveform",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 999999,
+      "semantic": "item.dissolve"
+    },
+    {
+      "ctx": "masterOff",
+      "decision": {
+        "drop": "disabled"
+      },
+      "loopMaxDurationMs": null,
+      "semantic": "item.dissolve"
+    },
+    {
+      "ctx": "masterOff",
+      "decision": {
+        "drop": "disabled"
+      },
+      "loopMaxDurationMs": 2000,
+      "semantic": "item.dissolve"
+    },
+    {
+      "ctx": "masterOff",
+      "decision": {
+        "drop": "disabled"
+      },
+      "loopMaxDurationMs": 0,
+      "semantic": "item.dissolve"
+    },
+    {
+      "ctx": "masterOff",
+      "decision": {
+        "drop": "disabled"
+      },
+      "loopMaxDurationMs": 999999,
+      "semantic": "item.dissolve"
+    },
+    {
+      "ctx": "systemOff",
+      "decision": {
+        "drop": "system-off"
+      },
+      "loopMaxDurationMs": null,
+      "semantic": "item.dissolve"
+    },
+    {
+      "ctx": "systemOff",
+      "decision": {
+        "drop": "system-off"
+      },
+      "loopMaxDurationMs": 2000,
+      "semantic": "item.dissolve"
+    },
+    {
+      "ctx": "systemOff",
+      "decision": {
+        "drop": "system-off"
+      },
+      "loopMaxDurationMs": 0,
+      "semantic": "item.dissolve"
+    },
+    {
+      "ctx": "systemOff",
+      "decision": {
+        "drop": "system-off"
+      },
+      "loopMaxDurationMs": 999999,
+      "semantic": "item.dissolve"
+    },
+    {
+      "ctx": "dnd",
+      "decision": {
+        "drop": "dnd"
+      },
+      "loopMaxDurationMs": null,
+      "semantic": "item.dissolve"
+    },
+    {
+      "ctx": "dnd",
+      "decision": {
+        "drop": "dnd"
+      },
+      "loopMaxDurationMs": 2000,
+      "semantic": "item.dissolve"
+    },
+    {
+      "ctx": "dnd",
+      "decision": {
+        "drop": "dnd"
+      },
+      "loopMaxDurationMs": 0,
+      "semantic": "item.dissolve"
+    },
+    {
+      "ctx": "dnd",
+      "decision": {
+        "drop": "dnd"
+      },
+      "loopMaxDurationMs": 999999,
+      "semantic": "item.dissolve"
+    },
+    {
+      "ctx": "hardwareMute",
+      "decision": {
+        "drop": "hardware-mute"
+      },
+      "loopMaxDurationMs": null,
+      "semantic": "item.dissolve"
+    },
+    {
+      "ctx": "hardwareMute",
+      "decision": {
+        "drop": "hardware-mute"
+      },
+      "loopMaxDurationMs": 2000,
+      "semantic": "item.dissolve"
+    },
+    {
+      "ctx": "hardwareMute",
+      "decision": {
+        "drop": "hardware-mute"
+      },
+      "loopMaxDurationMs": 0,
+      "semantic": "item.dissolve"
+    },
+    {
+      "ctx": "hardwareMute",
+      "decision": {
+        "drop": "hardware-mute"
+      },
+      "loopMaxDurationMs": 999999,
+      "semantic": "item.dissolve"
+    },
+    {
+      "ctx": "base",
+      "decision": {
+        "play": {
+          "effectId": "message_ping",
+          "form": "composition",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": null,
+      "semantic": "notify.message"
+    },
+    {
+      "ctx": "base",
+      "decision": {
+        "play": {
+          "effectId": "message_ping",
+          "form": "composition",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 2000,
+      "semantic": "notify.message"
+    },
+    {
+      "ctx": "base",
+      "decision": {
+        "play": {
+          "effectId": "message_ping",
+          "form": "composition",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 0,
+      "semantic": "notify.message"
+    },
+    {
+      "ctx": "base",
+      "decision": {
+        "play": {
+          "effectId": "message_ping",
+          "form": "composition",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 999999,
+      "semantic": "notify.message"
+    },
+    {
+      "ctx": "noComposition",
+      "decision": {
+        "play": {
+          "effectId": "message_ping",
+          "form": "waveform",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": null,
+      "semantic": "notify.message"
+    },
+    {
+      "ctx": "noComposition",
+      "decision": {
+        "play": {
+          "effectId": "message_ping",
+          "form": "waveform",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 2000,
+      "semantic": "notify.message"
+    },
+    {
+      "ctx": "noComposition",
+      "decision": {
+        "play": {
+          "effectId": "message_ping",
+          "form": "waveform",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 0,
+      "semantic": "notify.message"
+    },
+    {
+      "ctx": "noComposition",
+      "decision": {
+        "play": {
+          "effectId": "message_ping",
+          "form": "waveform",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 999999,
+      "semantic": "notify.message"
+    },
+    {
+      "ctx": "ermZ",
+      "decision": {
+        "play": {
+          "effectId": "message_ping",
+          "form": "waveform",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": null,
+      "semantic": "notify.message"
+    },
+    {
+      "ctx": "ermZ",
+      "decision": {
+        "play": {
+          "effectId": "message_ping",
+          "form": "waveform",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 2000,
+      "semantic": "notify.message"
+    },
+    {
+      "ctx": "ermZ",
+      "decision": {
+        "play": {
+          "effectId": "message_ping",
+          "form": "waveform",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 0,
+      "semantic": "notify.message"
+    },
+    {
+      "ctx": "ermZ",
+      "decision": {
+        "play": {
+          "effectId": "message_ping",
+          "form": "waveform",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 999999,
+      "semantic": "notify.message"
+    },
+    {
+      "ctx": "masterOff",
+      "decision": {
+        "drop": "disabled"
+      },
+      "loopMaxDurationMs": null,
+      "semantic": "notify.message"
+    },
+    {
+      "ctx": "masterOff",
+      "decision": {
+        "drop": "disabled"
+      },
+      "loopMaxDurationMs": 2000,
+      "semantic": "notify.message"
+    },
+    {
+      "ctx": "masterOff",
+      "decision": {
+        "drop": "disabled"
+      },
+      "loopMaxDurationMs": 0,
+      "semantic": "notify.message"
+    },
+    {
+      "ctx": "masterOff",
+      "decision": {
+        "drop": "disabled"
+      },
+      "loopMaxDurationMs": 999999,
+      "semantic": "notify.message"
+    },
+    {
+      "ctx": "systemOff",
+      "decision": {
+        "drop": "system-off"
+      },
+      "loopMaxDurationMs": null,
+      "semantic": "notify.message"
+    },
+    {
+      "ctx": "systemOff",
+      "decision": {
+        "drop": "system-off"
+      },
+      "loopMaxDurationMs": 2000,
+      "semantic": "notify.message"
+    },
+    {
+      "ctx": "systemOff",
+      "decision": {
+        "drop": "system-off"
+      },
+      "loopMaxDurationMs": 0,
+      "semantic": "notify.message"
+    },
+    {
+      "ctx": "systemOff",
+      "decision": {
+        "drop": "system-off"
+      },
+      "loopMaxDurationMs": 999999,
+      "semantic": "notify.message"
+    },
+    {
+      "ctx": "dnd",
+      "decision": {
+        "drop": "dnd"
+      },
+      "loopMaxDurationMs": null,
+      "semantic": "notify.message"
+    },
+    {
+      "ctx": "dnd",
+      "decision": {
+        "drop": "dnd"
+      },
+      "loopMaxDurationMs": 2000,
+      "semantic": "notify.message"
+    },
+    {
+      "ctx": "dnd",
+      "decision": {
+        "drop": "dnd"
+      },
+      "loopMaxDurationMs": 0,
+      "semantic": "notify.message"
+    },
+    {
+      "ctx": "dnd",
+      "decision": {
+        "drop": "dnd"
+      },
+      "loopMaxDurationMs": 999999,
+      "semantic": "notify.message"
+    },
+    {
+      "ctx": "hardwareMute",
+      "decision": {
+        "drop": "hardware-mute"
+      },
+      "loopMaxDurationMs": null,
+      "semantic": "notify.message"
+    },
+    {
+      "ctx": "hardwareMute",
+      "decision": {
+        "drop": "hardware-mute"
+      },
+      "loopMaxDurationMs": 2000,
+      "semantic": "notify.message"
+    },
+    {
+      "ctx": "hardwareMute",
+      "decision": {
+        "drop": "hardware-mute"
+      },
+      "loopMaxDurationMs": 0,
+      "semantic": "notify.message"
+    },
+    {
+      "ctx": "hardwareMute",
+      "decision": {
+        "drop": "hardware-mute"
+      },
+      "loopMaxDurationMs": 999999,
+      "semantic": "notify.message"
+    },
+    {
+      "ctx": "base",
+      "decision": {
+        "drop": "looping-needs-token"
+      },
+      "loopMaxDurationMs": null,
+      "semantic": "security.alarm"
+    },
+    {
+      "ctx": "base",
+      "decision": {
+        "play": {
+          "effectId": "security_alarm_loop",
+          "form": "composition",
+          "loopDeadlineMs": 2000
+        }
+      },
+      "loopMaxDurationMs": 2000,
+      "semantic": "security.alarm"
+    },
+    {
+      "ctx": "base",
+      "decision": {
+        "drop": "looping-needs-duration"
+      },
+      "loopMaxDurationMs": 0,
+      "semantic": "security.alarm"
+    },
+    {
+      "ctx": "base",
+      "decision": {
+        "play": {
+          "effectId": "security_alarm_loop",
+          "form": "composition",
+          "loopDeadlineMs": 300000
+        }
+      },
+      "loopMaxDurationMs": 999999,
+      "semantic": "security.alarm"
+    },
+    {
+      "ctx": "noComposition",
+      "decision": {
+        "drop": "looping-needs-token"
+      },
+      "loopMaxDurationMs": null,
+      "semantic": "security.alarm"
+    },
+    {
+      "ctx": "noComposition",
+      "decision": {
+        "play": {
+          "effectId": "security_alarm_loop",
+          "form": "waveform",
+          "loopDeadlineMs": 2000
+        }
+      },
+      "loopMaxDurationMs": 2000,
+      "semantic": "security.alarm"
+    },
+    {
+      "ctx": "noComposition",
+      "decision": {
+        "drop": "looping-needs-duration"
+      },
+      "loopMaxDurationMs": 0,
+      "semantic": "security.alarm"
+    },
+    {
+      "ctx": "noComposition",
+      "decision": {
+        "play": {
+          "effectId": "security_alarm_loop",
+          "form": "waveform",
+          "loopDeadlineMs": 300000
+        }
+      },
+      "loopMaxDurationMs": 999999,
+      "semantic": "security.alarm"
+    },
+    {
+      "ctx": "ermZ",
+      "decision": {
+        "drop": "looping-needs-token"
+      },
+      "loopMaxDurationMs": null,
+      "semantic": "security.alarm"
+    },
+    {
+      "ctx": "ermZ",
+      "decision": {
+        "play": {
+          "effectId": "security_alarm_loop",
+          "form": "waveform",
+          "loopDeadlineMs": 2000
+        }
+      },
+      "loopMaxDurationMs": 2000,
+      "semantic": "security.alarm"
+    },
+    {
+      "ctx": "ermZ",
+      "decision": {
+        "drop": "looping-needs-duration"
+      },
+      "loopMaxDurationMs": 0,
+      "semantic": "security.alarm"
+    },
+    {
+      "ctx": "ermZ",
+      "decision": {
+        "play": {
+          "effectId": "security_alarm_loop",
+          "form": "waveform",
+          "loopDeadlineMs": 300000
+        }
+      },
+      "loopMaxDurationMs": 999999,
+      "semantic": "security.alarm"
+    },
+    {
+      "ctx": "masterOff",
+      "decision": {
+        "drop": "disabled"
+      },
+      "loopMaxDurationMs": null,
+      "semantic": "security.alarm"
+    },
+    {
+      "ctx": "masterOff",
+      "decision": {
+        "drop": "disabled"
+      },
+      "loopMaxDurationMs": 2000,
+      "semantic": "security.alarm"
+    },
+    {
+      "ctx": "masterOff",
+      "decision": {
+        "drop": "disabled"
+      },
+      "loopMaxDurationMs": 0,
+      "semantic": "security.alarm"
+    },
+    {
+      "ctx": "masterOff",
+      "decision": {
+        "drop": "disabled"
+      },
+      "loopMaxDurationMs": 999999,
+      "semantic": "security.alarm"
+    },
+    {
+      "ctx": "systemOff",
+      "decision": {
+        "drop": "system-off"
+      },
+      "loopMaxDurationMs": null,
+      "semantic": "security.alarm"
+    },
+    {
+      "ctx": "systemOff",
+      "decision": {
+        "drop": "system-off"
+      },
+      "loopMaxDurationMs": 2000,
+      "semantic": "security.alarm"
+    },
+    {
+      "ctx": "systemOff",
+      "decision": {
+        "drop": "system-off"
+      },
+      "loopMaxDurationMs": 0,
+      "semantic": "security.alarm"
+    },
+    {
+      "ctx": "systemOff",
+      "decision": {
+        "drop": "system-off"
+      },
+      "loopMaxDurationMs": 999999,
+      "semantic": "security.alarm"
+    },
+    {
+      "ctx": "dnd",
+      "decision": {
+        "drop": "looping-needs-token"
+      },
+      "loopMaxDurationMs": null,
+      "semantic": "security.alarm"
+    },
+    {
+      "ctx": "dnd",
+      "decision": {
+        "play": {
+          "effectId": "security_alarm_loop",
+          "form": "composition",
+          "loopDeadlineMs": 2000
+        }
+      },
+      "loopMaxDurationMs": 2000,
+      "semantic": "security.alarm"
+    },
+    {
+      "ctx": "dnd",
+      "decision": {
+        "drop": "looping-needs-duration"
+      },
+      "loopMaxDurationMs": 0,
+      "semantic": "security.alarm"
+    },
+    {
+      "ctx": "dnd",
+      "decision": {
+        "play": {
+          "effectId": "security_alarm_loop",
+          "form": "composition",
+          "loopDeadlineMs": 300000
+        }
+      },
+      "loopMaxDurationMs": 999999,
+      "semantic": "security.alarm"
+    },
+    {
+      "ctx": "hardwareMute",
+      "decision": {
+        "drop": "looping-needs-token"
+      },
+      "loopMaxDurationMs": null,
+      "semantic": "security.alarm"
+    },
+    {
+      "ctx": "hardwareMute",
+      "decision": {
+        "play": {
+          "effectId": "security_alarm_loop",
+          "form": "composition",
+          "loopDeadlineMs": 2000
+        }
+      },
+      "loopMaxDurationMs": 2000,
+      "semantic": "security.alarm"
+    },
+    {
+      "ctx": "hardwareMute",
+      "decision": {
+        "drop": "looping-needs-duration"
+      },
+      "loopMaxDurationMs": 0,
+      "semantic": "security.alarm"
+    },
+    {
+      "ctx": "hardwareMute",
+      "decision": {
+        "play": {
+          "effectId": "security_alarm_loop",
+          "form": "composition",
+          "loopDeadlineMs": 300000
+        }
+      },
+      "loopMaxDurationMs": 999999,
+      "semantic": "security.alarm"
+    },
+    {
+      "ctx": "base",
+      "decision": {
+        "play": {
+          "effectId": "anti_screenshot",
+          "form": "composition",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": null,
+      "semantic": "security.intrusion"
+    },
+    {
+      "ctx": "base",
+      "decision": {
+        "play": {
+          "effectId": "anti_screenshot",
+          "form": "composition",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 2000,
+      "semantic": "security.intrusion"
+    },
+    {
+      "ctx": "base",
+      "decision": {
+        "play": {
+          "effectId": "anti_screenshot",
+          "form": "composition",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 0,
+      "semantic": "security.intrusion"
+    },
+    {
+      "ctx": "base",
+      "decision": {
+        "play": {
+          "effectId": "anti_screenshot",
+          "form": "composition",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 999999,
+      "semantic": "security.intrusion"
+    },
+    {
+      "ctx": "noComposition",
+      "decision": {
+        "play": {
+          "effectId": "anti_screenshot",
+          "form": "waveform",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": null,
+      "semantic": "security.intrusion"
+    },
+    {
+      "ctx": "noComposition",
+      "decision": {
+        "play": {
+          "effectId": "anti_screenshot",
+          "form": "waveform",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 2000,
+      "semantic": "security.intrusion"
+    },
+    {
+      "ctx": "noComposition",
+      "decision": {
+        "play": {
+          "effectId": "anti_screenshot",
+          "form": "waveform",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 0,
+      "semantic": "security.intrusion"
+    },
+    {
+      "ctx": "noComposition",
+      "decision": {
+        "play": {
+          "effectId": "anti_screenshot",
+          "form": "waveform",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 999999,
+      "semantic": "security.intrusion"
+    },
+    {
+      "ctx": "ermZ",
+      "decision": {
+        "play": {
+          "effectId": "anti_screenshot",
+          "form": "waveform",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": null,
+      "semantic": "security.intrusion"
+    },
+    {
+      "ctx": "ermZ",
+      "decision": {
+        "play": {
+          "effectId": "anti_screenshot",
+          "form": "waveform",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 2000,
+      "semantic": "security.intrusion"
+    },
+    {
+      "ctx": "ermZ",
+      "decision": {
+        "play": {
+          "effectId": "anti_screenshot",
+          "form": "waveform",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 0,
+      "semantic": "security.intrusion"
+    },
+    {
+      "ctx": "ermZ",
+      "decision": {
+        "play": {
+          "effectId": "anti_screenshot",
+          "form": "waveform",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 999999,
+      "semantic": "security.intrusion"
+    },
+    {
+      "ctx": "masterOff",
+      "decision": {
+        "drop": "disabled"
+      },
+      "loopMaxDurationMs": null,
+      "semantic": "security.intrusion"
+    },
+    {
+      "ctx": "masterOff",
+      "decision": {
+        "drop": "disabled"
+      },
+      "loopMaxDurationMs": 2000,
+      "semantic": "security.intrusion"
+    },
+    {
+      "ctx": "masterOff",
+      "decision": {
+        "drop": "disabled"
+      },
+      "loopMaxDurationMs": 0,
+      "semantic": "security.intrusion"
+    },
+    {
+      "ctx": "masterOff",
+      "decision": {
+        "drop": "disabled"
+      },
+      "loopMaxDurationMs": 999999,
+      "semantic": "security.intrusion"
+    },
+    {
+      "ctx": "systemOff",
+      "decision": {
+        "drop": "system-off"
+      },
+      "loopMaxDurationMs": null,
+      "semantic": "security.intrusion"
+    },
+    {
+      "ctx": "systemOff",
+      "decision": {
+        "drop": "system-off"
+      },
+      "loopMaxDurationMs": 2000,
+      "semantic": "security.intrusion"
+    },
+    {
+      "ctx": "systemOff",
+      "decision": {
+        "drop": "system-off"
+      },
+      "loopMaxDurationMs": 0,
+      "semantic": "security.intrusion"
+    },
+    {
+      "ctx": "systemOff",
+      "decision": {
+        "drop": "system-off"
+      },
+      "loopMaxDurationMs": 999999,
+      "semantic": "security.intrusion"
+    },
+    {
+      "ctx": "dnd",
+      "decision": {
+        "play": {
+          "effectId": "anti_screenshot",
+          "form": "composition",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": null,
+      "semantic": "security.intrusion"
+    },
+    {
+      "ctx": "dnd",
+      "decision": {
+        "play": {
+          "effectId": "anti_screenshot",
+          "form": "composition",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 2000,
+      "semantic": "security.intrusion"
+    },
+    {
+      "ctx": "dnd",
+      "decision": {
+        "play": {
+          "effectId": "anti_screenshot",
+          "form": "composition",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 0,
+      "semantic": "security.intrusion"
+    },
+    {
+      "ctx": "dnd",
+      "decision": {
+        "play": {
+          "effectId": "anti_screenshot",
+          "form": "composition",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 999999,
+      "semantic": "security.intrusion"
+    },
+    {
+      "ctx": "hardwareMute",
+      "decision": {
+        "play": {
+          "effectId": "anti_screenshot",
+          "form": "composition",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": null,
+      "semantic": "security.intrusion"
+    },
+    {
+      "ctx": "hardwareMute",
+      "decision": {
+        "play": {
+          "effectId": "anti_screenshot",
+          "form": "composition",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 2000,
+      "semantic": "security.intrusion"
+    },
+    {
+      "ctx": "hardwareMute",
+      "decision": {
+        "play": {
+          "effectId": "anti_screenshot",
+          "form": "composition",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 0,
+      "semantic": "security.intrusion"
+    },
+    {
+      "ctx": "hardwareMute",
+      "decision": {
+        "play": {
+          "effectId": "anti_screenshot",
+          "form": "composition",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 999999,
+      "semantic": "security.intrusion"
+    },
+    {
+      "ctx": "base",
+      "decision": {
+        "play": {
+          "effectId": "magnetic_snap",
+          "form": "composition",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": null,
+      "semantic": "selection.snap"
+    },
+    {
+      "ctx": "base",
+      "decision": {
+        "play": {
+          "effectId": "magnetic_snap",
+          "form": "composition",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 2000,
+      "semantic": "selection.snap"
+    },
+    {
+      "ctx": "base",
+      "decision": {
+        "play": {
+          "effectId": "magnetic_snap",
+          "form": "composition",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 0,
+      "semantic": "selection.snap"
+    },
+    {
+      "ctx": "base",
+      "decision": {
+        "play": {
+          "effectId": "magnetic_snap",
+          "form": "composition",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 999999,
+      "semantic": "selection.snap"
+    },
+    {
+      "ctx": "noComposition",
+      "decision": {
+        "play": {
+          "effectId": "magnetic_snap",
+          "form": "waveform",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": null,
+      "semantic": "selection.snap"
+    },
+    {
+      "ctx": "noComposition",
+      "decision": {
+        "play": {
+          "effectId": "magnetic_snap",
+          "form": "waveform",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 2000,
+      "semantic": "selection.snap"
+    },
+    {
+      "ctx": "noComposition",
+      "decision": {
+        "play": {
+          "effectId": "magnetic_snap",
+          "form": "waveform",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 0,
+      "semantic": "selection.snap"
+    },
+    {
+      "ctx": "noComposition",
+      "decision": {
+        "play": {
+          "effectId": "magnetic_snap",
+          "form": "waveform",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 999999,
+      "semantic": "selection.snap"
+    },
+    {
+      "ctx": "ermZ",
+      "decision": {
+        "play": {
+          "effectId": "magnetic_snap",
+          "form": "waveform",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": null,
+      "semantic": "selection.snap"
+    },
+    {
+      "ctx": "ermZ",
+      "decision": {
+        "play": {
+          "effectId": "magnetic_snap",
+          "form": "waveform",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 2000,
+      "semantic": "selection.snap"
+    },
+    {
+      "ctx": "ermZ",
+      "decision": {
+        "play": {
+          "effectId": "magnetic_snap",
+          "form": "waveform",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 0,
+      "semantic": "selection.snap"
+    },
+    {
+      "ctx": "ermZ",
+      "decision": {
+        "play": {
+          "effectId": "magnetic_snap",
+          "form": "waveform",
+          "loopDeadlineMs": null
+        }
+      },
+      "loopMaxDurationMs": 999999,
+      "semantic": "selection.snap"
+    },
+    {
+      "ctx": "masterOff",
+      "decision": {
+        "drop": "disabled"
+      },
+      "loopMaxDurationMs": null,
+      "semantic": "selection.snap"
+    },
+    {
+      "ctx": "masterOff",
+      "decision": {
+        "drop": "disabled"
+      },
+      "loopMaxDurationMs": 2000,
+      "semantic": "selection.snap"
+    },
+    {
+      "ctx": "masterOff",
+      "decision": {
+        "drop": "disabled"
+      },
+      "loopMaxDurationMs": 0,
+      "semantic": "selection.snap"
+    },
+    {
+      "ctx": "masterOff",
+      "decision": {
+        "drop": "disabled"
+      },
+      "loopMaxDurationMs": 999999,
+      "semantic": "selection.snap"
+    },
+    {
+      "ctx": "systemOff",
+      "decision": {
+        "drop": "system-off"
+      },
+      "loopMaxDurationMs": null,
+      "semantic": "selection.snap"
+    },
+    {
+      "ctx": "systemOff",
+      "decision": {
+        "drop": "system-off"
+      },
+      "loopMaxDurationMs": 2000,
+      "semantic": "selection.snap"
+    },
+    {
+      "ctx": "systemOff",
+      "decision": {
+        "drop": "system-off"
+      },
+      "loopMaxDurationMs": 0,
+      "semantic": "selection.snap"
+    },
+    {
+      "ctx": "systemOff",
+      "decision": {
+        "drop": "system-off"
+      },
+      "loopMaxDurationMs": 999999,
+      "semantic": "selection.snap"
+    },
+    {
+      "ctx": "dnd",
+      "decision": {
+        "drop": "dnd"
+      },
+      "loopMaxDurationMs": null,
+      "semantic": "selection.snap"
+    },
+    {
+      "ctx": "dnd",
+      "decision": {
+        "drop": "dnd"
+      },
+      "loopMaxDurationMs": 2000,
+      "semantic": "selection.snap"
+    },
+    {
+      "ctx": "dnd",
+      "decision": {
+        "drop": "dnd"
+      },
+      "loopMaxDurationMs": 0,
+      "semantic": "selection.snap"
+    },
+    {
+      "ctx": "dnd",
+      "decision": {
+        "drop": "dnd"
+      },
+      "loopMaxDurationMs": 999999,
+      "semantic": "selection.snap"
+    },
+    {
+      "ctx": "hardwareMute",
+      "decision": {
+        "drop": "hardware-mute"
+      },
+      "loopMaxDurationMs": null,
+      "semantic": "selection.snap"
+    },
+    {
+      "ctx": "hardwareMute",
+      "decision": {
+        "drop": "hardware-mute"
+      },
+      "loopMaxDurationMs": 2000,
+      "semantic": "selection.snap"
+    },
+    {
+      "ctx": "hardwareMute",
+      "decision": {
+        "drop": "hardware-mute"
+      },
+      "loopMaxDurationMs": 0,
+      "semantic": "selection.snap"
+    },
+    {
+      "ctx": "hardwareMute",
+      "decision": {
+        "drop": "hardware-mute"
+      },
+      "loopMaxDurationMs": 999999,
       "semantic": "selection.snap"
     }
   ]

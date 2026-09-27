@@ -1,0 +1,6 @@
+// CI 专用：settings 里的阿里云镜像是给国内开发机加速的，在 GitHub 机房反而慢，去掉走官方源。
+settingsEvaluated { s ->
+    def aliyun = { it instanceof MavenArtifactRepository && it.url.toString().contains('aliyun') }
+    s.pluginManagement.repositories.removeIf(aliyun)
+    s.dependencyResolutionManagement.repositories.removeIf(aliyun)
+}

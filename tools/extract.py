@@ -38,7 +38,7 @@ import sys
 import yaml
 
 # ── vault 文档定位 ──────────────────────────────────────────────────────
-DEFAULT_VAULT = r"D:\wiki\general-os-system\20-知识\项目记录"
+DEFAULT_VAULT = r"D:\MarkDown\memory\adam\20-知识\项目记录\CipherLex"
 
 DOCS = {
     "spec":    "触觉引擎CipherHaptic-规格与架构设计-2026-07-29.md",

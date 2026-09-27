@@ -95,6 +95,59 @@ class GoldenTest {
     }
 
     @Test
+    fun `golden 覆盖全部语义 —— 过期即失败`() {
+        // 2026-09-27 代码审查：golden 曾停在 42 个用例，漏掉唯一的 looping 效果 security.alarm，
+        // 而 P-17 却标着 verified。用例集必须等于 semantics × hardwareClass × globalScale。
+        val cases = JSONObject(SpecPaths.goldenJson()).getJSONArray("cases")
+        val covered = (0 until cases.length()).map { cases.getJSONObject(it).getString("semantic") }.toSet()
+        assertEquals(loader.semanticIds.toSet(), covered, "golden 缺语义 —— 重跑 tools/golden.py")
+        assertEquals(loader.semanticIds.size * 3 * 2, cases.length(), "golden 用例数 ≠ 语义 × 3 档 × 2 缩放")
+    }
+
+    /**
+     * Decision 双端对拍（主文档 B.3 / 骨架 §3.3，v1.4.0）：drop 原因、表达形式、looping 时长。
+     * 这一层此前没有基准，而它恰是 iOS 落地时最易漂移的一段（审查 B1 就发生在这里）。
+     */
+    @Test
+    fun `Decision 用例逐字段等价`() {
+        val root = JSONObject(SpecPaths.goldenJson())
+        val ctxs = root.getJSONObject("decisionContexts")
+        val ds = root.getJSONArray("decisions")
+        assertTrue(ds.length() > 0, "golden 缺 decisions —— 重跑 tools/golden.py")
+        for (i in 0 until ds.length()) {
+            val d = ds.getJSONObject(i)
+            val sem = d.getString("semantic")
+            val cj = ctxs.getJSONObject(d.getString("ctx"))
+            val ctx = PipelineContext(
+                masterEnabled = cj.getBoolean("masterEnabled"),
+                systemHapticsEnabled = cj.getBoolean("systemHapticsEnabled"),
+                mute = when (cj.getString("mute")) {
+                    "none" -> SystemMute.NONE
+                    "dnd" -> SystemMute.DND
+                    else -> SystemMute.HARDWARE
+                },
+                globalScale = cj.getDouble("globalScale").toFloat(),
+                hardwareClass = HardwareClass.valueOf(cj.getString("hardwareClass")),
+                apiGate = ApiGate(34, cj.getBoolean("compositionSupported")),
+            )
+            val loop = if (d.isNull("loopMaxDurationMs")) null else d.getLong("loopMaxDurationMs")
+            val label = "$sem × ${d.getString("ctx")} × loop=$loop"
+            val got = DecisionPipeline.decide(sem, PlayOpts(loop), ctx, loader, emptyList(), 2, 100)
+            val want = d.getJSONObject("decision")
+            if (want.has("drop")) {
+                assertEquals(Decision.Drop(want.getString("drop")), got, label)
+            } else {
+                val w = want.getJSONObject("play")
+                val play = got as? Decision.Play ?: fail("$label 期望 play，实际 $got")
+                assertEquals(w.getString("effectId"), play.resolved.effectId, "$label effectId")
+                assertEquals(w.getString("form").uppercase(), play.form.name, "$label form")
+                val wantDeadline = if (w.isNull("loopDeadlineMs")) null else w.getLong("loopDeadlineMs")
+                assertEquals(wantDeadline, play.loopDeadlineMs, "$label loopDeadlineMs")
+            }
+        }
+    }
+
+    @Test
     fun `Android 波形数组由 IR 生成而非手写`() {
         // 「这段 12 行代码就是"双端时序永不错位"的全部保证」（IR 文档 §四.2）
         val cases = JSONObject(SpecPaths.goldenJson()).getJSONArray("cases")

@@ -254,7 +254,7 @@ class CipherHapticTest {
     @Test
     fun `CancelToken 能区分还在播与已播完`() {
         val (h, _, sched) = build()
-        val token = h.playLoopingEffect(CipherHapticSemantic.ITEM_DISSOLVE)
+        val token = h.playLoopingEffect(CipherHapticSemantic.ITEM_DISSOLVE, maxDurationMs = 10_000)
         assertFalse(token.isCancelled)
         assertFalse(token.isFinished, "刚起播不该是 finished")
 
@@ -296,7 +296,7 @@ class CipherHapticTest {
     @Test
     fun `playLoopingEffect 可以播 looping,且能被 token 停掉`() {
         val (h, gw, sched) = build()
-        val token = h.playLoopingEffect(CipherHapticSemantic.SECURITY_ALARM)
+        val token = h.playLoopingEffect(CipherHapticSemantic.SECURITY_ALARM, maxDurationMs = 10_000)
         assertTrue(gw.waveformCalls.isNotEmpty(), "正确路径应当能播")
         token.cancel()
         sched.advance(1_000)
@@ -304,16 +304,18 @@ class CipherHapticTest {
     }
 
     @Test
-    fun `looping 有绝对上限 —— 业务方忘了 cancel 也会自行结束`() {
-        // continuous 有 idleTimeoutMs 兜底，而 looping 此前【什么兜底都没有】：
-        // 只要没人 cancel 就永远震下去。两者的泄漏风险同构，防线却只有一半。
-        val (h, _, sched) = build()
-        h.playLoopingEffect(CipherHapticSemantic.SECURITY_ALARM)
+    fun `looping 在应用告知的时长到期后结束`() {
+        val (h, gw, sched) = build()
+        val token = h.playLoopingEffect(CipherHapticSemantic.SECURITY_ALARM, maxDurationMs = 2_000)
+        sched.advance(1_500)
         assertEquals(CipherHapticEngineState.RUNNING, h.engineState())
-
-        sched.advance(CipherHaptic.MAX_LOOP_DURATION_MS + 1_000)
-        assertEquals(CipherHapticEngineState.IDLE, h.engineState(),
-                     "★ 到达绝对上限后必须强制结束，不能无限震下去")
+        sched.advance(1_000)
+        assertEquals(CipherHapticEngineState.IDLE, h.engineState(), "★ 时长到期必须结束")
+        assertTrue(token.isFinished)
+        assertFalse(token.isCancelled, "到期结束不是业务方取消")
+        val n = gw.waveformCalls.size
+        sched.advance(5_000)
+        assertEquals(n, gw.waveformCalls.size, "结束后不得再提交")
     }
 
     @Test

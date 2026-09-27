@@ -1,5 +1,6 @@
 package com.cipherlex.haptic.engine
 
+import com.cipherlex.haptic.core.ExpressionForm
 import com.cipherlex.haptic.core.HardwareClass
 import com.cipherlex.haptic.core.PlaybackFsm
 import com.cipherlex.haptic.core.ResolvedWaveform
@@ -46,7 +47,7 @@ class PlaybackHandleTest {
         wl: FakeWakeLock = FakeWakeLock(),
     ): Triple<PlaybackHandle, TestScheduler, FakeWakeLock> {
         val rw = loader.resolve(semantic, hw)!!
-        val h = PlaybackHandle(1, rw, sched, gw, wl, useComposition = false)
+        val h = PlaybackHandle(1, rw, sched, gw, wl, form = ExpressionForm.WAVEFORM)
         h.attach(PlaybackFsm(table, rw.kind, rw.category, h.actions))
         return Triple(h, sched, wl)
     }
@@ -74,7 +75,7 @@ class PlaybackHandleTest {
         val gw = FakeGateway(failOnVibrate = true)
         val wl = FakeWakeLock()
         val rw = loader.resolve("item.dissolve", HardwareClass.LINEAR_X_FULL)!!
-        val h = PlaybackHandle(1, rw, sched, gw, wl, useComposition = false)
+        val h = PlaybackHandle(1, rw, sched, gw, wl, form = ExpressionForm.WAVEFORM)
         h.attach(PlaybackFsm(table, rw.kind, rw.category, h.actions))
 
         h.fsm.send("SUBMIT")                       // 平台抛 DeadObjectException
@@ -113,7 +114,7 @@ class PlaybackHandleTest {
         val sched = TestScheduler()
         val gw = FakeGateway()
         val rw = loader.resolve("gesture.track", HardwareClass.LINEAR_X_FULL)!!
-        val h = PlaybackHandle(1, rw, sched, gw, FakeWakeLock(), useComposition = false)
+        val h = PlaybackHandle(1, rw, sched, gw, FakeWakeLock(), form = ExpressionForm.WAVEFORM)
         h.attach(PlaybackFsm(table, rw.kind, rw.category, h.actions))
 
         h.coalescer.buffer(0.9f, 0.5f)             // 平台就绪前手指已拖到 0.9
@@ -136,7 +137,7 @@ class PlaybackHandleTest {
             val sched = TestScheduler()
             val wl = FakeWakeLock()
             val gw = FakeGateway(failOnVibrate = rng.nextInt(4) == 0)   // 25% 概率平台失败
-            val h = PlaybackHandle(i.toLong(), rw, sched, gw, wl, useComposition = false)
+            val h = PlaybackHandle(i.toLong(), rw, sched, gw, wl, form = ExpressionForm.WAVEFORM)
             h.attach(PlaybackFsm(table, rw.kind, rw.category, h.actions))
 
             val seq = List(rng.nextInt(1, 15)) { table.events[rng.nextInt(table.events.size)] }

@@ -152,8 +152,9 @@ class TuningActivity : Activity() {
         })
 
         root.addView(header("③ 循环与取消（接口 3 / CancelToken）"))
-        root.addView(button("playLoopingEffect(notifyMessage)") {
-            loopToken = haptic.playLoopingEffect(CipherHapticSemantic.NOTIFY_MESSAGE)
+        // 循环时长由应用告知（v1.4.0）；security.alarm 是唯一 kind=looping 的效果
+        root.addView(button("playLoopingEffect(securityAlarm, 5s)") {
+            loopToken = haptic.playLoopingEffect(CipherHapticSemantic.SECURITY_ALARM, maxDurationMs = 5_000)
             log("looping 起播，token=${loopToken?.hashCode()}")
             refreshStatus()
         })

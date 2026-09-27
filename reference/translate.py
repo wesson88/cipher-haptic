@@ -30,9 +30,12 @@ def to_ios_events(events: list[IREvent]) -> list[dict]:
     return out
 
 
-def to_android_waveform(events: list[IREvent], looping: bool = False) -> dict:
+def to_android_waveform(events: list[IREvent]) -> dict:
     """
-    IR → createWaveform(timings, amplitudes, repeat)。
+    IR → createWaveform(timings, amplitudes, repeat)。**只产出一轮，repeat 恒 -1**：
+    本库从不使用平台级循环。looping 由引擎 end-timer 在 totalDurationMs（含 loopGapMs）
+    到期后重提交下一轮（状态机 §4.7 方案 B，2026-09-27 定案）——平台级 repeat=0 与引擎
+    resubmit 并存曾造成双重循环、gap 丢失、ERM 档持续长震，且进程冻结时停不下来。
 
     ⚠️ `timings[i]` 是**该段的持续时长**，不是绝对时间戳。v1.1.0 的四套波形全部
     错位就是把这两者搞混了——脉冲起点须逐段累加求得。本函数从绝对时刻生成，
@@ -53,13 +56,13 @@ def to_android_waveform(events: list[IREvent], looping: bool = False) -> dict:
         timings.append(e.durationMs)
         amps.append(round_half_up(e.intensity * 255))   # P-13；半数进一,见 SSOT §1.1
         cursor = e.atMs + e.durationMs
-    return {"timings_ms": timings, "amplitudes": amps,
-            "repeat": 0 if looping else -1}
+    return {"timings_ms": timings, "amplitudes": amps, "repeat": -1}
 
 
 def to_android_composition(events: list[IREvent]) -> dict:
     """
-    IR → Composition.addPrimitive。仅当全 pulse 且 API≥30 且原语受支持（P-08/P-15）。
+    IR → Composition.addPrimitive。是否走这条路由管线第 ⑤ 步判定（reference/pipeline.py
+    `expression_form`：全 pulse 且 API≥30 且原语受支持，P-08/P-15），这里只做翻译。
     `delay` 是相对上一原语的前置延迟，同样由绝对时刻算出。
     """
     if any(e.kind != "pulse" for e in events):

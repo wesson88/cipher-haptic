@@ -186,11 +186,11 @@ parity:
   P-17:
     title: "循环实现"
     class: "A"
-    ios: "pattern 层 repeat"
-    android: "`createWaveform(repeat = index)`"
-    resolution: "IR 用 `kind: looping` + `loopGapMs`，各端翻译"
+    ios: "每轮一个有限 pattern（不用 pattern 层 loop）"
+    android: "每轮 `createWaveform(repeat = -1)` 有限提交，引擎 end-timer 重提交（v1.4.0 起不用平台级 repeat）"
+    resolution: "IR 用 `kind: looping` + `loopGapMs`，间隔由 end-timer 表达，双端同构"
     residual: "无"
-    verify: "双端等价测试"
+    verify: "双端等价测试 + facade 循环用例"
     metric: null
     status: "verified"
 

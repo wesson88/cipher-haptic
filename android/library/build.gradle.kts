@@ -28,6 +28,8 @@ android {
     // 平台调用被收窄到 VibratorGateway 一个接口，其余全是纯逻辑，
     // 故绝大部分测试能在 JVM 上跑，不需要 Robolectric 或真机。
     testOptions.unitTests.isReturnDefaultValues = true
+    // 单测统一 JUnit5 + mockk（2026-09-27 起）；kotlin("test") 随平台自动绑定 kotlin-test-junit5
+    testOptions.unitTests.all { it.useJUnitPlatform() }
 
     publishing { singleVariant("release") { withSourcesJar() } }
 }
@@ -54,5 +56,9 @@ dependencies {
 
     // 仅测试期。运行时依赖只有 core + kotlin-stdlib —— 无第三方，无 native，无 ABI 分包
     testImplementation(kotlin("test"))
+    testImplementation("org.junit.jupiter:junit-jupiter:5.10.3")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    // mockk 1.13.x 与 Kotlin 1.9 匹配（1.14.x 以 Kotlin 2.x 编译，1.9 编译器读不了其元数据）
+    testImplementation("io.mockk:mockk:1.13.12")
     testImplementation("org.json:json:20240303")   // JVM 单测里补一份;Android 平台自带
 }

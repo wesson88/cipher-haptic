@@ -1,17 +1,21 @@
 package com.cipherlex.haptic
 
 import android.content.Context
-import com.cipherlex.haptic.core.Category
+import com.cipherlex.haptic.core.ApiGate
+import com.cipherlex.haptic.core.Decision
+import com.cipherlex.haptic.core.DecisionPipeline
 import com.cipherlex.haptic.core.HapticScheduler
 import com.cipherlex.haptic.core.CipherHapticMetricsSink
 import com.cipherlex.haptic.core.LatencyProbe
 import com.cipherlex.haptic.core.MetricsCollector
 import com.cipherlex.haptic.core.HardwareClass
+import com.cipherlex.haptic.core.PipelineContext
+import com.cipherlex.haptic.core.PlayOpts
 import com.cipherlex.haptic.core.PreemptionPolicy
 import com.cipherlex.haptic.core.PlaybackFsm
 import com.cipherlex.haptic.core.SpecLoader
+import com.cipherlex.haptic.core.SystemMute
 import com.cipherlex.haptic.core.TransitionTable
-import com.cipherlex.haptic.core.WaveKind
 import com.cipherlex.haptic.engine.AndroidFrameClock
 import com.cipherlex.haptic.engine.AndroidHapticScheduler
 import com.cipherlex.haptic.engine.AndroidVibratorGateway
@@ -148,10 +152,18 @@ class CipherHaptic internal constructor(
     fun playEffect(semantic: CipherHapticSemantic, onNextFrame: Boolean) =
         submitPlay(semantic, onNextFrame)
 
-    fun playLoopingEffect(semantic: CipherHapticSemantic): CipherHapticCancelToken {
+    /**
+     * 接口 3：循环播放。**循环多久由应用告知**（v1.4.0，2026-09-27 定案）——告警该响多久是业务决策；
+     * 库只兜底 [MAX_LOOP_DURATION_MS]（超过按它截断），`maxDurationMs ≤ 0` 则 drop（`looping-needs-duration`）。
+     *
+     * 每一轮提交一次**有限**波形，由引擎按 `totalDurationMs`（含 `loopGapMs`）重提交下一轮
+     * （状态机 §4.7 方案 B）。所以即使重提交失败、或进程被系统冻结，最多也只残留一轮。
+     * 到期或 `token.cancel()` 都会结束循环。
+     */
+    fun playLoopingEffect(semantic: CipherHapticSemantic, maxDurationMs: Long): CipherHapticCancelToken {
         val token = HandleToken()
         scheduler.submit {
-            startPlayback(semantic, viaLoopingApi = true)
+            startPlayback(semantic, opts = PlayOpts(loopMaxDurationMs = maxDurationMs))
                 ?.let { token.bind(it) } ?: token.markFinished()
         }
         return token
@@ -247,46 +259,28 @@ class CipherHaptic internal constructor(
         if (onNextFrame) frameClock.postFrameCallback(go) else go()
     }
 
-    private fun startPlayback(
-        semantic: CipherHapticSemantic,
-        preSubmit: (PlaybackHandle) -> Unit = {},
-        viaLoopingApi: Boolean = false,
-    ): PlaybackHandle? {
-        val t0 = System.nanoTime()
-        metrics.onRequest()
-        // ① master
-        if (!masterEnabled.get()) return drop(semantic, "disabled")
-        // ② system-off（P-14）  ③ dnd —— critical 绕过
-        val category = loader.categoryOf(semantic.id)
-        val mute = muteState.get()
-        if (mute != MuteState.UNMUTED && category != Category.CRITICAL) {
-            return drop(semantic, if (mute == MuteState.DND) "dnd" else "hardware-mute")
-        }
-        // ④ scale  ⑤ degrade（silent → 不建 handle，IR §3.3③）
-        val rw = loader.resolve(semantic.id, probe.hardwareClass, globalScale())
-            ?: return drop(semantic, "degraded-to-silent")
-        // ⚠️ `full` 的含义是【没有降级】。把它记进 degradeCountsByAction 会让该指标
-        //    恒等于总播放数 —— 真机压测里就是 {full=1641} 而请求正好也是 1641，
-        //    这个数完全没有信息量。它要回答的是"多少效果被降级了"，不是"播了多少次"。
-        rw.degradeTrace.firstOrNull()?.takeIf { it != "full" }?.let {
-            metrics.onDegrade(it)
-            debugDelegate?.onDegraded(semantic.id, it)
-        }
+    /**
+     * 决策管线的**快照**：决策所需的全部外部状态一次取齐（B.3 / 骨架 §3.3）。
+     * 决策本身是 [DecisionPipeline.decide] 纯函数，facade 不再内联任何决策步骤。
+     */
+    private fun snapshot() = PipelineContext(
+        masterEnabled = masterEnabled.get(),
+        // ⚠️ P-14 系统触觉总开关的平台监听尚未接入（代码审查 C1，待排期）。字段先立起来：
+        //    管线第 ② 步已按它 drop，接上监听后这里换成真实值即可，决策逻辑不用改。
+        systemHapticsEnabled = true,
+        mute = when (muteState.get()) {
+            MuteState.UNMUTED -> SystemMute.NONE
+            MuteState.DND -> SystemMute.DND
+            MuteState.HARDWARE_MUTED -> SystemMute.HARDWARE
+        },
+        globalScale = globalScale(),
+        hardwareClass = probe.hardwareClass,
+        apiGate = ApiGate(gateway.sdkInt, probe.canUseComposition(intArrayOf(PRIMITIVE_CLICK))),
+    )
 
-        // ── 安全闸：无停止途径的无限循环，宁可不播 ──────────────────
-        // ⚠️ `playEffect` 不返回 token，而 kind=looping 的效果在平台侧是【无限循环】
-        //    （repeat=0）。两者相遇 = 手机一直震，业务方拿不到任何停止手段，
-        //    终端用户只能去设置里强停应用。
-        //    2026-08-02 真机上真实发生过一次 —— 这不是理论风险。
-        //    正确用法是 playLoopingEffect（返回 CancelToken）。此处拒绝而非静默播一次：
-        //    播一次会掩盖误用，而 drop 会进指标与 debugDelegate，是可见的。
-        if (rw.kind == WaveKind.LOOPING && !viaLoopingApi) {
-            return drop(semantic, "looping-needs-token")
-        }
-
-        // ⑥ preempt —— 纯逻辑算目标，执行是发 CANCEL（§8.2）
+    private fun activeSnapshot(): List<PreemptionPolicy.ActiveHandleInfo> {
         sweep()
-        val snapshot = handles.values.map {
+        return handles.values.map {
             PreemptionPolicy.ActiveHandleInfo(
                 id = it.id,
                 category = it.resolved.category,
@@ -296,19 +290,48 @@ class CipherHaptic internal constructor(
                 state = it.fsm.state,
             )
         }
-        PreemptionPolicy.computeTargets(rw.category, snapshot, capacity, coalesceWindowMs)
-            .forEach { metrics.onPreempted(); handles[it]?.fsm?.send("CANCEL") }
+    }
+
+    /**
+     * 取快照 → 纯函数决策 → 执行。**决策 + 抢占 + 提交在同一个 scheduler 任务里**，
+     * 是不可分的 critical section（§七.3）。
+     */
+    private fun startPlayback(
+        semantic: CipherHapticSemantic,
+        preSubmit: (PlaybackHandle) -> Unit = {},
+        opts: PlayOpts = PlayOpts(),
+    ): PlaybackHandle? {
+        val t0 = System.nanoTime()
+        metrics.onRequest()
+        val decision = DecisionPipeline.decide(
+            semantic.id, opts, snapshot(), loader, activeSnapshot(), capacity, coalesceWindowMs,
+        )
+        val play = when (decision) {
+            is Decision.Drop -> return drop(semantic, decision.reason)
+            is Decision.Play -> decision
+        }
+        val rw = play.resolved
+        // ⚠️ `full` 的含义是【没有降级】。把它记进 degradeCountsByAction 会让该指标
+        //    恒等于总播放数 —— 真机压测里就是 {full=1641} 而请求正好也是 1641，
+        //    这个数完全没有信息量。它要回答的是"多少效果被降级了"，不是"播了多少次"。
+        //    且只在 Play 时记：此前 looping-needs-token 这类 drop 也先被记成了「已降级」。
+        rw.degradeTrace.firstOrNull()?.takeIf { it != "full" }?.let {
+            metrics.onDegrade(it)
+            debugDelegate?.onDegraded(semantic.id, it)
+        }
+        // ⑥ 执行抢占 —— 目标由管线算好，执行是发 CANCEL（§8.2）
+        play.preemptTargets.forEach { metrics.onPreempted(); handles[it]?.fsm?.send("CANCEL") }
 
         // ── T0→T1 采样：决策管线到此结束（V5 §6.2b）──────────────────
         // 这一段是【本库唯一能优化的部分】，也是"是否下沉 C++"唯一相关的度量。
         probe2.onSample(LatencyProbe.Segment.DECISION, System.nanoTime() - t0)
 
         // ⑦ submit —— handle 创建 + 平台提交在同一 critical section 内（§七.3）
-        val useComposition = probe.canUseComposition(intArrayOf(PRIMITIVE_CLICK))
+        //    表达形式与循环时长都来自 Decision：engine 只照单执行，不再判断（B.1 / 规则 9）
         val h = PlaybackHandle(
             id = nextId.getAndIncrement(), resolved = rw, scheduler = scheduler,
-            gateway = gateway, wakeLock = wakeLock, useComposition = useComposition,
-            maxLoopMs = MAX_LOOP_DURATION_MS, probe = probe2, metrics = metrics,
+            gateway = gateway, wakeLock = wakeLock, form = play.form,
+            loopDeadlineMs = play.loopDeadlineMs, probe = probe2, metrics = metrics,
         ) {
             debugDelegate?.onStateChanged(it)
         }
@@ -462,14 +485,12 @@ class CipherHaptic internal constructor(
         const val DEFAULT_COALESCE_WINDOW_MS = 100L
 
         /**
-         * 循环效果的**绝对上限**，到期强制结束。
+         * 循环效果的**库兜底上限**：应用告知的 `maxDurationMs` 超过它按它截断。
          *
          * ⚠️ **这条是 2026-08-02 真机事故之后补的**：`continuous` 有 `idleTimeoutMs`
-         * 兜底（业务方忘了 `end` 也不会一直震），而 `looping` **什么兜底都没有** ——
-         * 只要没人 `cancel`，它就永远震下去。两者的泄漏风险是同构的，防线却只有一半。
-         *
-         * 5 分钟远超任何合理的触觉告警时长；它拦的不是正常用法，是**忘记取消**。
+         * 兜底，而 `looping` 当时什么兜底都没有。v1.4.0 起时长改由应用告知，
+         * 这个值退为兜底 —— 5 分钟远超任何合理的触觉告警时长，拦的是**误传**，不是正常用法。
          */
-        const val MAX_LOOP_DURATION_MS = 300_000L
+        const val MAX_LOOP_DURATION_MS = DecisionPipeline.MAX_LOOP_DURATION_MS
     }
 }
