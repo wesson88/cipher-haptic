@@ -15,7 +15,7 @@ import kotlin.test.assertTrue
 
 private class NoWakeLock : WakeLockGateway {
     override fun shouldHold(resolved: ResolvedWaveform) = false
-    override fun acquire() = Unit
+    override fun acquire(timeoutMs: Long) = Unit
     override fun release() = Unit
 }
 

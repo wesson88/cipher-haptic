@@ -25,8 +25,9 @@ import com.cipherlex.haptic.core.WaveKind
  * | 资源 | 释放点 |
  * |---|---|
  * | wake lock（Android 独有，P-10） | `release` 动作 |
- * | end-timer / idle-timer / keepAlive-timer | `release` 动作 |
- * | coalescer 的补发块 | `release` 动作 |
+ * | end / idle / keepAlive / grace / loopDeadline / EXPIRE 定时器 | `release` 动作 |
+ * | coalescer 的补发块 | `stop` 与 `release` 动作 |
+ * | 马达（本 handle 最后一次提交的振动） | `stop` / `suspend` / `report`，经 [MotorOwner] 判定 |
  *
  * **全部且仅在进入 `Reclaimed` 时释放。** 任何抵达不了 `Reclaimed` 的状态路径都是泄漏
  * —— 这正是状态机不变式 1 存在的理由，也是为什么 `FAIL` 必须在三态都有出口。
@@ -46,6 +47,8 @@ class PlaybackHandle(
     private val loopDeadlineMs: Long? = null,
     private val probe: LatencyProbe = LatencyProbe.NOOP,
     private val metrics: MetricsCollector? = null,
+    /** 同一个 facade 下的全部 handle 共享一个 —— 判定"马达上现在是谁的振动"（审查 B5） */
+    private val motor: MotorOwner = MotorOwner(),
     private val onLog: (String) -> Unit = {},
 ) {
     /** 状态机。动作由本类注入（[actions]）。 */
@@ -55,13 +58,14 @@ class PlaybackHandle(
     // ⚠️ 第二个参数 sharpness 在此端被【丢弃】—— Android 没有这个维度，振幅是唯一
     //    输出（P-04）。刻意不传进 sendContinuous：让"这个值到此为止"成为签名上的事实，
     //    而不是实现里一个静默忽略的形参。sharpness 的双端不等价由 D 类契约暴露。
-    val coalescer = ContinuousCoalescer(scheduler) { i, _ -> sendContinuous(i) }
+    val coalescer = ContinuousCoalescer(scheduler) { i, _ -> sendContinuousOrFail(i) }
 
     private var endTimer: HapticScheduler.Cancellable? = null
     private var idleTimer: HapticScheduler.Cancellable? = null
     private var keepAliveTimer: HapticScheduler.Cancellable? = null
     private var graceTimer: HapticScheduler.Cancellable? = null
     private var loopDeadline: HapticScheduler.Cancellable? = null
+    private var expireTimer: HapticScheduler.Cancellable? = null
     private var wakeLockHeld = false
 
     /** 供抢占策略读取（§8.2 `activeSnapshot`）。 */
@@ -69,6 +73,9 @@ class PlaybackHandle(
 
     /** 宿主（facade）在此接收"已回收"通知。**与本类自己的状态副作用分开** —— 见 attach。 */
     var onReclaimed: (() -> Unit)? = null
+
+    /** 进入任一终态（Completed / Cancelled / Failed / Reclaimed）—— token 的 `isFinished` 靠它，不跨线程读 FSM */
+    var onFinished: (() -> Unit)? = null
 
     fun attach(fsm: PlaybackFsm) {
         this.fsm = fsm
@@ -86,8 +93,11 @@ class PlaybackHandle(
         //    现在本类只用一个 onStateEntered，宿主改用 [onReclaimed]，不再抢同一个槽。
         fsm.onStateEntered = { st ->
             when (st) {
-                "Completed", "Cancelled" -> startGraceTimer()
-                "Reclaimed" -> onReclaimed?.invoke()
+                "Completed", "Cancelled" -> { startGraceTimer(); onFinished?.invoke() }
+                // 审查 B2：Failed 只有 EXPIRE 一个出口，而此前没有任何发送方 → 永不回收
+                //（handle 泄漏、engineState 恒 RUNNING、wake lock 靠超时才放）。测试里手动补发 EXPIRE 掩盖了它。
+                "Failed" -> { startExpireTimer(); onFinished?.invoke() }
+                "Reclaimed" -> { onFinished?.invoke(); onReclaimed?.invoke() }
             }
         }
     }
@@ -109,9 +119,12 @@ class PlaybackHandle(
                 "startKeepAlive" -> startKeepAlive()
                 "clearKeepAlive" -> { keepAliveTimer?.cancel(); keepAliveTimer = null }
                 "suspend" -> { stopMotor(); cancelEndTimer() }
-                "stop" -> { stopMotor(); cancelAllTimers(); startGraceTimer() }
+                // 审查 A4：stop 必须一并取消 coalescer 的补发块，否则 CANCEL 之后补发再起振一段
+                "stop" -> { stopMotor(); cancelAllTimers(); coalescer.reset(); startGraceTimer() }
                 "report" -> {
                     metrics?.onFail()
+                    // 失败也要停马达：重提交 / 续发失败时，上一次提交的振动可能还在跑（审查 A1 同类）
+                    stopMotor()
                     onLog("FAIL ${resolved.semanticId}")
                 }
                 "release" -> release()
@@ -132,11 +145,12 @@ class PlaybackHandle(
                 // 后者只是"从未收到过 UPDATE 时的兜底值"（§4.6）。
                 val c = resolved.continuous!!
                 val (i, _) = coalescer.latest() ?: (c.initialIntensity to c.initialSharpness)
-                sendContinuous(i)
+                vibrateContinuous(i)
                 // 起播这一发绕过了 coalescer，必须补登记，否则节流从第二次才生效
                 coalescer.markSentAt(scheduler.nowMs())
             } else if (form == ExpressionForm.COMPOSITION) {
                 gateway.vibrateComposition(AndroidTranslator.toComposition(resolved))
+                motor.ownerId = id
             } else {
                 val w = AndroidTranslator.toWaveform(resolved)
                 gateway.vibrateWaveform(
@@ -144,6 +158,7 @@ class PlaybackHandle(
                     w.amplitudes.toIntArray(),
                     w.repeat,
                 )
+                motor.ownerId = id
             }
             // T1→T2：平台调用往返。这段是 binder IPC，改不了 —— 但要量出来，
             // 才知道 T0→T1 在整体里占多少（V5 §6.2b 的决策规则按占比写死）。
@@ -163,16 +178,41 @@ class PlaybackHandle(
      * **不收 sharpness** —— Android 没有这个维度（P-04）。把它挡在签名外，
      * 比在实现里静默忽略一个形参诚实。
      */
-    private fun sendContinuous(intensity: Float) {
+    private fun vibrateContinuous(intensity: Float) {
         val seg = resolved.continuous?.segmentMs ?: return
         val amp = Math.round(intensity * 255).coerceIn(1, 255)
         gateway.vibrateWaveform(longArrayOf(seg.toLong()), intArrayOf(amp), -1)
+        motor.ownerId = id
     }
 
+    /**
+     * coalescer 的发送出口（update / 尾部补发 / endContinuous 的 flush）。
+     *
+     * 审查 B3：这条路径此前不在任何 try/catch 里，平台异常会在 HandlerThread 上抛出、直接让宿主进程崩溃。
+     * 现在失败转 FAIL —— 与起播失败同一条出口（Active → Failed → EXPIRE → Reclaimed）。
+     */
+    private fun sendContinuousOrFail(intensity: Float) {
+        try {
+            vibrateContinuous(intensity)
+        } catch (e: Exception) {
+            onLog("continuousFail ${resolved.semanticId} ← ${e::class.simpleName}")
+            fsm.send("FAIL")
+        }
+    }
+
+    /**
+     * 停马达。审查 B5：`cancelAll` 是【全局】的（P-03），而 `vibrate()` 会替换本 app 正在播的振动。
+     * 所以只有"马达上现在就是本 handle 最后提交的那一段"时才 cancel；否则本 handle 的振动早已被
+     * 后来者替换掉，此时 cancel 只会误停别人的（此前无条件 cancelAll，一次抢占 / token.cancel 会掐掉新效果）。
+     */
     private fun stopMotor() {
-        // ⚠️ cancelAll 是【全局】的（P-03）。调用方须先确认本 handle 是唯一活跃振动，
-        // 否则应走"标记到点即停"路径 —— 该判断在 facade 的 activeHandles 处做。
-        gateway.cancelAll()
+        if (motor.ownerId != id) return
+        motor.ownerId = MotorOwner.NONE
+        try {
+            gateway.cancelAll()
+        } catch (e: Exception) {
+            onLog("cancelFail ${resolved.semanticId} ← ${e::class.simpleName}")
+        }
     }
 
     // ── 定时器 ──────────────────────────────────────────────────────
@@ -217,6 +257,12 @@ class PlaybackHandle(
         graceTimer = scheduler.schedule(GRACE_MS) { fsm.send("GRACE_EXPIRED") }
     }
 
+    /** 进入 Failed 后排 EXPIRE —— 与 grace 同一窗口。 */
+    private fun startExpireTimer() {
+        expireTimer?.cancel()
+        expireTimer = scheduler.schedule(GRACE_MS) { fsm.send("EXPIRE") }
+    }
+
     private fun startKeepAlive() {
         keepAliveTimer?.cancel()
         keepAliveTimer = scheduler.schedule(KEEPALIVE_MS) { fsm.send("CANCEL") }
@@ -234,6 +280,7 @@ class PlaybackHandle(
         cancelAllTimers()
         graceTimer?.cancel(); graceTimer = null
         loopDeadline?.cancel(); loopDeadline = null
+        expireTimer?.cancel(); expireTimer = null
     }
 
     // ── wake lock ───────────────────────────────────────────────────
@@ -244,9 +291,23 @@ class PlaybackHandle(
         // partial wake lock 对已提交的振动可能完全无用。
         // V3 若实测无差异，删掉的是这一处 + WakeLockGateway，状态机不用动。
         if (!wakeLockHeld && wakeLock.shouldHold(resolved)) {
-            wakeLock.acquire()
+            wakeLock.acquire(wakeLockTimeoutMs())
             wakeLockHeld = true
         }
+    }
+
+    /**
+     * 兜底超时 = 本 handle 可能活多久（审查 B4：此前固定 60s，比 looping 的 5 分钟上限还短，
+     * 而重提交不会重新获取）。至少覆盖 critical 的后台保活窗口，再加 grace 与余量。
+     * 正常路径下锁在 Reclaimed 时就释放了，这个值只在状态机失守时才起作用。
+     */
+    internal fun wakeLockTimeoutMs(): Long {
+        val life = when (resolved.kind) {
+            WaveKind.LOOPING -> loopDeadlineMs ?: DecisionPipeline.MAX_LOOP_DURATION_MS
+            WaveKind.CONTINUOUS -> DecisionPipeline.MAX_LOOP_DURATION_MS   // 拖拽时长不可预知，用同一个库上限
+            WaveKind.ONESHOT -> resolved.totalDurationMs.toLong()
+        }
+        return maxOf(life, KEEPALIVE_MS) + GRACE_MS + WAKELOCK_MARGIN_MS
     }
 
     /** **唯一的资源释放点。** finally 语义 —— 但"绝不泄漏"依赖状态机可达性，不是它本身。 */
@@ -262,7 +323,7 @@ class PlaybackHandle(
     /** 测试断言用：是否还持有任何资源。 */
     fun anyResourceHeld(): Boolean =
         wakeLockHeld || endTimer != null || idleTimer != null ||
-            keepAliveTimer != null || graceTimer != null || loopDeadline != null
+            keepAliveTimer != null || graceTimer != null || loopDeadline != null || expireTimer != null
 
     companion object {
         /**
@@ -277,6 +338,23 @@ class PlaybackHandle(
          * 但 LRA 主动制动通常远短于此。
          */
         const val GRACE_MS = 50L
+
+        /** wake lock 兜底超时在预计寿命之外再留的余量 */
+        const val WAKELOCK_MARGIN_MS = 1_000L
+    }
+}
+
+/**
+ * 马达归属（审查 B5）。Android 上本 app 同一时刻只有一段振动在马达上：新的 `vibrate()` 替换旧的，
+ * 而 `cancel()` 是全局的（P-03 / P-05）。于是"停掉本 handle 的振动"只能在它仍是最后提交者时才做。
+ *
+ * 同一个 facade 的全部 handle 共享一个实例；读写都在串行调度线程上，无需同步。
+ */
+class MotorOwner {
+    var ownerId: Long = NONE
+
+    companion object {
+        const val NONE = -1L
     }
 }
 
@@ -288,6 +366,10 @@ class PlaybackHandle(
 interface WakeLockGateway {
     /** 按【场景】判定，不按时长 —— 时长阈值是错误的判断维度（性能 §一 v1.2.0 修正）。 */
     fun shouldHold(resolved: ResolvedWaveform): Boolean
-    fun acquire()
+    /**
+     * 本 handle 开始持有，与 [release] 严格成对（每个 handle 至多各一次）。
+     * [timeoutMs] 是兜底上限：状态机失守时系统在此后强制释放。多个持有者时取最晚的那个。
+     */
+    fun acquire(timeoutMs: Long)
     fun release()
 }

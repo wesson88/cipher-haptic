@@ -128,7 +128,7 @@ class V3Service : Service() {
     private fun startCycle() {
         val t0 = SystemClock.elapsedRealtime()
         val u0 = SystemClock.uptimeMillis()
-        if (holdWakeLock) wl.acquire()
+        if (holdWakeLock) wl.acquire(sleepMs + 15_000L)   // 兜底超时覆盖整轮（45s 长睡 + 余量）
         Log.i(TAG, "LS cycle t0=$t0 u0=$u0 wl=${if (holdWakeLock) "ON" else "OFF"}")
 
         // 心跳：用来区分"CPU 挂起"与"进程被冻结"。

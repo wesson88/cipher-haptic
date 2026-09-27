@@ -18,7 +18,8 @@ class FakeWakeLock : WakeLockGateway {
     var held = 0
     var acquires = 0
     override fun shouldHold(resolved: ResolvedWaveform) = true    // 最坏情况：总是持有
-    override fun acquire() { held++; acquires++ }
+    var lastTimeoutMs = 0L
+    override fun acquire(timeoutMs: Long) { held++; acquires++; lastTimeoutMs = timeoutMs }
     override fun release() { held-- }
 }
 

@@ -1,6 +1,8 @@
 package com.cipherlex.haptic
 
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import com.cipherlex.haptic.core.ApiGate
 import com.cipherlex.haptic.core.Decision
 import com.cipherlex.haptic.core.DecisionPipeline
@@ -21,6 +23,7 @@ import com.cipherlex.haptic.engine.AndroidHapticScheduler
 import com.cipherlex.haptic.engine.AndroidVibratorGateway
 import com.cipherlex.haptic.engine.AndroidWakeLock
 import com.cipherlex.haptic.engine.HardwareClassProbe
+import com.cipherlex.haptic.engine.MotorOwner
 import com.cipherlex.haptic.engine.PlaybackHandle
 import com.cipherlex.haptic.engine.VibratorGateway
 import com.cipherlex.haptic.engine.WakeLockGateway
@@ -99,6 +102,8 @@ interface CipherHapticDebugDelegate {
  * ## 线程契约
  *
  * 所有方法 `marshal` 到单一串行 [HapticScheduler]；所有同步 getter 读 atomic 快照。
+ * 回调（[debugDelegate] / [CipherHapticMetricsSink]）经 `callbackExecutor` 投递，生产装配为主线程
+ * （A.2 回调线程契约；此前在调度线程上直接回调，审查 C4）。
  * **决策 + 抢占 + 提交是不可分的 critical section**（§七.3）——一旦分裂，
  * cancel 可能在"创建后、提交前"到达，导致状态不一致。
  *
@@ -119,11 +124,20 @@ class CipherHaptic internal constructor(
     private val coalesceWindowMs: Long = DEFAULT_COALESCE_WINDOW_MS,
     private val probe2: LatencyProbe = LatencyProbe.NOOP,
     private val metricsSink: CipherHapticMetricsSink = CipherHapticMetricsSink.NOOP,
+    /** 回调投递。生产 = 主线程 Handler；JVM 单测 = 立即执行 */
+    private val callbackExecutor: (() -> Unit) -> Unit = { it() },
 ) {
     private val metrics = MetricsCollector { probe.hardwareClass }
     private val table = TransitionTable.from(loader.transitions)
     private val handles = LinkedHashMap<Long, PlaybackHandle>()
     private val nextId = AtomicLong(1)
+    /** 全部 handle 共享：马达上现在是谁的振动（审查 B5，见 [MotorOwner]） */
+    private val motor = MotorOwner()
+    /** 指标出口同样走回调投递 */
+    private val deliveringSink = object : CipherHapticMetricsSink {
+        override fun onSnapshot(snapshot: com.cipherlex.haptic.core.CipherHapticMetricsSnapshot) =
+            callbackExecutor { metricsSink.onSnapshot(snapshot) }
+    }
 
     // 同步 getter 读 atomic 快照（A.2 回调线程契约）
     private val masterEnabled = AtomicBoolean(true)
@@ -131,6 +145,7 @@ class CipherHaptic internal constructor(
     private val muteState = java.util.concurrent.atomic.AtomicReference(MuteState.UNMUTED)
     private val observers = java.util.concurrent.CopyOnWriteArrayList<MuteStateObserver>()
 
+    @Volatile
     var debugDelegate: CipherHapticDebugDelegate? = null
 
     /** 连续通道：**全局单例**（P-20 登记的显式取舍，非遗漏）。 */
@@ -161,10 +176,12 @@ class CipherHaptic internal constructor(
      * 到期或 `token.cancel()` 都会结束循环。
      */
     fun playLoopingEffect(semantic: CipherHapticSemantic, maxDurationMs: Long): CipherHapticCancelToken {
+        val t0 = System.nanoTime()
         val token = HandleToken()
         scheduler.submit {
-            startPlayback(semantic, opts = PlayOpts(loopMaxDurationMs = maxDurationMs))
-                ?.let { token.bind(it) } ?: token.markFinished()
+            // 在 SUBMIT 之前绑定：首次提交就失败时 Failed 的终态通知也要落到 token 上
+            startPlayback(semantic, t0, opts = PlayOpts(loopMaxDurationMs = maxDurationMs),
+                          preSubmit = { token.bind(it) }) ?: token.markFinished()
         }
         return token
     }
@@ -174,12 +191,17 @@ class CipherHaptic internal constructor(
         sweep()
     }
 
-    fun updateContinuousEffect(intensity: Float, sharpness: Float) = scheduler.submit {
+    fun updateContinuousEffect(intensity: Float, sharpness: Float) {
+        val t0 = System.nanoTime()
+        scheduler.submit { updateContinuousOnQueue(intensity, sharpness, t0) }
+    }
+
+    private fun updateContinuousOnQueue(intensity: Float, sharpness: Float, t0: Long) {
         val existing = continuousHandle
         if (existing == null) {
             // 首次调用：起播。参数在 SUBMIT 之前塞进 coalescer，由 submit 取用（§4.6）
-            startContinuous(intensity, sharpness)
-            return@submit
+            startContinuous(intensity, sharpness, t0)
+            return
         }
         // v4.3：平台就绪前只缓冲（不碰平台、不动 idle-timer），就绪后才 trailing coalesce
         if (existing.fsm.state == "Active") {
@@ -207,13 +229,24 @@ class CipherHaptic internal constructor(
         Unit
     }
 
+    /**
+     * 与播放同一口径：直接问纯函数管线（此前只查 master / 振动器 / silent，漏了 system-off 与 dnd）。
+     * looping 按"经 playLoopingEffect 调用"预览；活跃句柄快照取空（预览不涉及抢占）。
+     */
     fun preview(semantic: CipherHapticSemantic): CipherHapticAvailability {
-        if (!masterEnabled.get()) return CipherHapticAvailability(false, null, "disabled")
-        if (!probe.vibratorAvailable) return CipherHapticAvailability(false, null, "no-vibrator")
-        val rw = loader.resolve(semantic.id, probe.hardwareClass, globalScale())
-            ?: return CipherHapticAvailability(false, "silent", "degraded-to-silent")
-        val action = rw.degradeTrace.firstOrNull()
-        return CipherHapticAvailability(true, if (action == "full") null else action, null)
+        val d = DecisionPipeline.decide(
+            semantic.id, PlayOpts(loopMaxDurationMs = MAX_LOOP_DURATION_MS), snapshot(), loader,
+            emptyList(), capacity, coalesceWindowMs,
+        )
+        return when (d) {
+            is Decision.Drop -> CipherHapticAvailability(
+                false, if (d.reason == "degraded-to-silent") "silent" else null, d.reason)
+            is Decision.Play -> {
+                if (!probe.vibratorAvailable) return CipherHapticAvailability(false, null, "no-vibrator")
+                val action = d.resolved.degradeTrace.firstOrNull()
+                CipherHapticAvailability(true, if (action == "full") null else action, null)
+            }
+        }
     }
 
     // ── 配置 setter / getter（4 方法）───────────────────────────────
@@ -254,8 +287,15 @@ class CipherHaptic internal constructor(
 
     // ── 内部：决策管线 ⓪→⑦ ─────────────────────────────────────────
 
+    /**
+     * T0 取在 marshal 之前（V5 §6.2b：T0 = facade 入口）。此前取在队列任务里，调度排队时间被漏掉（审查 C5）。
+     * onNextFrame 的等帧是刻意的，不计入：T0 取在帧回调里、marshal 之前。
+     */
     private fun submitPlay(semantic: CipherHapticSemantic, onNextFrame: Boolean) {
-        val go = { scheduler.submit { startPlayback(semantic); Unit } }
+        val go = {
+            val t0 = System.nanoTime()
+            scheduler.submit { startPlayback(semantic, t0); Unit }
+        }
         if (onNextFrame) frameClock.postFrameCallback(go) else go()
     }
 
@@ -301,10 +341,10 @@ class CipherHaptic internal constructor(
      */
     private fun startPlayback(
         semantic: CipherHapticSemantic,
+        t0: Long,
         preSubmit: (PlaybackHandle) -> Unit = {},
         opts: PlayOpts = PlayOpts(),
     ): PlaybackHandle? {
-        val t0 = System.nanoTime()
         metrics.onRequest()
         val decision = DecisionPipeline.decide(
             semantic.id, opts, snapshot(), loader, activeSnapshot(), capacity, coalesceWindowMs,
@@ -318,9 +358,9 @@ class CipherHaptic internal constructor(
         //    恒等于总播放数 —— 真机压测里就是 {full=1641} 而请求正好也是 1641，
         //    这个数完全没有信息量。它要回答的是"多少效果被降级了"，不是"播了多少次"。
         //    且只在 Play 时记：此前 looping-needs-token 这类 drop 也先被记成了「已降级」。
-        rw.degradeTrace.firstOrNull()?.takeIf { it != "full" }?.let {
-            metrics.onDegrade(it)
-            debugDelegate?.onDegraded(semantic.id, it)
+        rw.degradeTrace.firstOrNull()?.takeIf { it != "full" }?.let { action ->
+            metrics.onDegrade(action)
+            notifyDelegate { it.onDegraded(semantic.id, action) }
         }
         // ⑥ 执行抢占 —— 目标由管线算好，执行是发 CANCEL（§8.2）
         play.preemptTargets.forEach { metrics.onPreempted(); handles[it]?.fsm?.send("CANCEL") }
@@ -334,9 +374,9 @@ class CipherHaptic internal constructor(
         val h = PlaybackHandle(
             id = nextId.getAndIncrement(), resolved = rw, scheduler = scheduler,
             gateway = gateway, wakeLock = wakeLock, form = play.form,
-            loopDeadlineMs = play.loopDeadlineMs, probe = probe2, metrics = metrics,
-        ) {
-            debugDelegate?.onStateChanged(it)
+            loopDeadlineMs = play.loopDeadlineMs, probe = probe2, metrics = metrics, motor = motor,
+        ) { msg ->
+            notifyDelegate { it.onStateChanged(msg) }
         }
         // ⚠️ 回收必须是【推送式】：Reclaimed 由 grace 定时器驱动，而 sweep() 是拉取式的
         //    —— 没有下一次业务调用时，回收后的 handle 会一直挂在 activeHandles 里。
@@ -349,10 +389,11 @@ class CipherHaptic internal constructor(
         preSubmit(h)                       // continuous 在此塞入手指当前位置
         h.fsm.send("SUBMIT")
         probe2.onSample(LatencyProbe.Segment.SOFTWARE_TOTAL, System.nanoTime() - t0)
-        if (h.fsm.state == "Active") metrics.onSubmitted() else metrics.onFail()
+        // 失败只由 report 动作计一次（此前这里另记一次，首次提交失败被计两遍）
+        if (h.fsm.state == "Active") metrics.onSubmitted()
         sweep()
         metrics.onActiveCountChanged(handles.size)
-        metrics.maybeReport(metricsSink, scheduler.nowMs())
+        metrics.maybeReport(deliveringSink, scheduler.nowMs())
         return h
     }
 
@@ -361,8 +402,8 @@ class CipherHaptic internal constructor(
      * `latest()` 作为起播强度，取不到才回落 IR 的 `initialIntensity`（§4.6）。
      * 顺序反了就会"按下去拖了一段才起震，且第一下强度对不上手指位置"。
      */
-    private fun startContinuous(intensity: Float, sharpness: Float): PlaybackHandle? =
-        startPlayback(CipherHapticSemantic.GESTURE_TRACK, preSubmit = { h ->
+    private fun startContinuous(intensity: Float, sharpness: Float, t0: Long): PlaybackHandle? =
+        startPlayback(CipherHapticSemantic.GESTURE_TRACK, t0, preSubmit = { h ->
             h.coalescer.buffer(intensity, sharpness)
             continuousHandle = h
         })
@@ -374,8 +415,14 @@ class CipherHaptic internal constructor(
      */
     private fun drop(semantic: CipherHapticSemantic, reason: String): PlaybackHandle? {
         metrics.onDrop(reason)
-        debugDelegate?.onDropped(semantic.id, reason)
+        notifyDelegate { it.onDropped(semantic.id, reason) }
         return null
+    }
+
+    /** 回调一律经 [callbackExecutor] 投递（生产 = 主线程），不在调度线程上直接调宿主代码。 */
+    private fun notifyDelegate(f: (CipherHapticDebugDelegate) -> Unit) {
+        val d = debugDelegate ?: return
+        callbackExecutor { f(d) }
     }
 
     /** 取当前指标快照。调音台与宿主埋点都从这里读。 */
@@ -412,12 +459,22 @@ class CipherHaptic internal constructor(
         handles.filterValues { it.fsm.state == "Reclaimed" }.keys.toList().forEach { retire(it) }
     }
 
+    /**
+     * 审查 C4：字段跨线程读写（业务线程 cancel / 查询，调度线程置终态），此前既不是 volatile，
+     * `isFinished` 还从业务线程直接读 FSM 状态。现在终态由 handle 推送（[PlaybackHandle.onFinished]），
+     * 业务线程只读 volatile 标志。
+     */
     private inner class HandleToken : CipherHapticCancelToken {
+        /** 只在调度线程上读写 */
         private var handle: PlaybackHandle? = null
-        private var cancelledFlag = false
-        private var finishedFlag = false
+        @Volatile private var cancelledFlag = false
+        @Volatile private var finishedFlag = false
 
-        fun bind(h: PlaybackHandle) { handle = h }
+        fun bind(h: PlaybackHandle) {
+            handle = h
+            h.onFinished = { finishedFlag = true }
+        }
+
         fun markFinished() { finishedFlag = true }
 
         override fun cancel() {
@@ -426,10 +483,7 @@ class CipherHaptic internal constructor(
         }
 
         override val isCancelled: Boolean get() = cancelledFlag
-        override val isFinished: Boolean
-            get() = finishedFlag || handle?.fsm?.state.let {
-                it == "Completed" || it == "Cancelled" || it == "Failed" || it == "Reclaimed"
-            }
+        override val isFinished: Boolean get() = finishedFlag
     }
 
     companion object {
@@ -475,6 +529,7 @@ class CipherHaptic internal constructor(
                 frameClock = AndroidFrameClock(),
                 probe2 = latencyProbe,
                 metricsSink = metricsSink,
+                callbackExecutor = MainThreadExecutor::post,
             )
         }
 
@@ -495,5 +550,13 @@ class CipherHaptic internal constructor(
          * 这个值退为兜底 —— 5 分钟远超任何合理的触觉告警时长，拦的是**误传**，不是正常用法。
          */
         const val MAX_LOOP_DURATION_MS = DecisionPipeline.MAX_LOOP_DURATION_MS
+    }
+}
+
+/** 回调投递到主线程（A.2 回调线程契约）。 */
+private object MainThreadExecutor {
+    private val main by lazy { Handler(Looper.getMainLooper()) }
+    fun post(task: () -> Unit) {
+        main.post { task() }
     }
 }

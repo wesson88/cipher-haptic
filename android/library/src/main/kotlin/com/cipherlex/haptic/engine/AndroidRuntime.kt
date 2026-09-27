@@ -5,6 +5,7 @@ import android.os.Handler
 import android.os.HandlerThread
 import android.os.PowerManager
 import android.os.SystemClock
+import android.util.Log
 import com.cipherlex.haptic.core.HapticScheduler
 import com.cipherlex.haptic.core.ResolvedWaveform
 import com.cipherlex.haptic.core.WaveKind
@@ -39,13 +40,13 @@ class AndroidHapticScheduler(name: String = "CipherHaptic") : HapticScheduler {
     override fun submit(task: () -> Unit) {
         // 已在串行线程上时直接执行 —— 否则 handle 创建与平台提交会被拆到两个
         // 消息里，而它们必须在【同一个 critical section】内完成（§七.3）。
-        if (Thread.currentThread() === thread) task() else handler.post { task() }
+        if (Thread.currentThread() === thread) task() else handler.post { guarded(task) }
     }
 
     override fun schedule(delayMs: Long, task: () -> Unit): HapticScheduler.Cancellable {
         // ⚠️ 不得用 Thread.sleep 排节拍 —— 那是 Haptico 的实证坑（PatternEngine.swift
         //    在串行 OperationQueue 上 Thread.sleep）：阻塞且无法精确取消。
-        val r = Runnable { task() }
+        val r = Runnable { guarded(task) }
         handler.postDelayed(r, delayMs)
         return object : HapticScheduler.Cancellable {
             override fun cancel() = handler.removeCallbacks(r)
@@ -55,6 +56,18 @@ class AndroidHapticScheduler(name: String = "CipherHaptic") : HapticScheduler {
     /** 进程退出前调用。库自身不主动销毁 —— engine 一旦启动常驻到进程结束。 */
     fun shutdown() {
         thread.quitSafely()
+    }
+
+    /**
+     * 最后一道防线（审查 B3）：串行线程上的未捕获异常会直接让宿主进程崩溃，违反「API 绝不抛异常」。
+     * 主防线在 `PlaybackHandle`（平台调用一律 try/catch → FAIL）；这里只兜住漏网的，并留日志。
+     */
+    private fun guarded(task: () -> Unit) {
+        try {
+            task()
+        } catch (e: Exception) {
+            Log.e("CipherHaptic", "串行任务抛出未捕获异常（已吞掉，不崩宿主）", e)
+        }
     }
 }
 
@@ -66,7 +79,7 @@ class AndroidHapticScheduler(name: String = "CipherHaptic") : HapticScheduler {
  */
 object NoWakeLock : WakeLockGateway {
     override fun shouldHold(resolved: ResolvedWaveform) = false
-    override fun acquire() = Unit
+    override fun acquire(timeoutMs: Long) = Unit
     override fun release() = Unit
 }
 
@@ -128,9 +141,25 @@ class AndroidWakeLock(context: Context) : WakeLockGateway {
         .getSystemService(Context.POWER_SERVICE) as? PowerManager
 
     private val lock: PowerManager.WakeLock? = runCatching {
+        // 底层锁保持【非】引用计数：计数由 WakeLockRefCounter 在本进程内做。
+        // 平台的引用计数模式与带超时的 acquire 混用时，超时释放与显式 release 会重复扣减，
+        // 扣到负数直接抛 "WakeLock under-locked"。
         power?.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "CipherHaptic:playback")
             ?.apply { setReferenceCounted(false) }
     }.getOrNull()
+
+    /**
+     * 审查 B4：此前全库共用一把非引用计数的锁 —— 一个 handle 回收就把别的 handle 的锁也放了；
+     * 兜底超时固定 60s，比 looping 的 300s 上限还短，且重提交时不会重新获取。
+     * 现在按 handle 计数，超时取所有持有者要求的最晚时刻。
+     */
+    private val counter = WakeLockRefCounter(
+        object : WakeLockRefCounter.Target {
+            override fun hold(timeoutMs: Long) { runCatching { lock?.acquire(timeoutMs) } }
+            override fun drop() { runCatching { if (lock?.isHeld == true) lock.release() } }
+        },
+        clock = SystemClock::uptimeMillis,
+    )
 
     override fun shouldHold(resolved: ResolvedWaveform): Boolean {
         // 按场景：屏幕熄灭或效果本身是长生命周期（looping / continuous）时才持有。
@@ -139,17 +168,49 @@ class AndroidWakeLock(context: Context) : WakeLockGateway {
         return screenOff || longLived
     }
 
-    override fun acquire() {
-        // 兜底超时：即便状态机出现未预料的路径，系统也会在此后强制释放。
-        // ⚠️ 它是【最后一道】保险，不是主防线 —— "绝不泄漏"依赖状态机的可达性完备。
-        runCatching { lock?.acquire(MAX_HOLD_MS) }
+    override fun acquire(timeoutMs: Long) = counter.acquire(timeoutMs)
+
+    override fun release() = counter.release()
+}
+
+/**
+ * 进程内的 wake lock 引用计数（审查 B4）。抽成纯 JVM 类是为了能单测 —— `PowerManager` 在 JVM 上不可用。
+ *
+ * - 每个持有者 `acquire` / `release` 严格成对，计数归零才真正释放底层锁；
+ * - 兜底超时取**所有在持者要求的最晚时刻**：底层锁每次都以剩余时长重新 acquire（非引用计数模式下
+ *   重复 acquire 会重置超时），所以一个短效果的持有不会把长效果的超时缩短；
+ * - 多余的 `release`（计数已为 0）是 no-op，不会扣成负数。
+ *
+ * 兜底超时是【最后一道】保险，不是主防线 —— "绝不泄漏"依赖状态机的可达性完备。
+ */
+class WakeLockRefCounter(private val target: Target, private val clock: () -> Long) {
+
+    interface Target {
+        fun hold(timeoutMs: Long)
+        fun drop()
     }
 
-    override fun release() {
-        runCatching { if (lock?.isHeld == true) lock.release() }
+    private var count = 0
+    private var holdUntil = 0L
+
+    val holders: Int
+        @Synchronized get() = count
+
+    @Synchronized
+    fun acquire(timeoutMs: Long) {
+        val now = clock()
+        count++
+        holdUntil = maxOf(holdUntil, now + timeoutMs)
+        target.hold(holdUntil - now)
     }
 
-    private companion object {
-        const val MAX_HOLD_MS = 60_000L
+    @Synchronized
+    fun release() {
+        if (count == 0) return
+        count--
+        if (count == 0) {
+            holdUntil = 0L
+            target.drop()
+        }
     }
 }
