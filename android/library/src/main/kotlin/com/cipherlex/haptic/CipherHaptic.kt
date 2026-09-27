@@ -268,8 +268,7 @@ class CipherHaptic internal constructor(
         // ⚠️ P-14 系统触觉总开关的平台监听尚未接入（代码审查 C1，待排期）。字段先立起来：
         //    管线第 ② 步已按它 drop，接上监听后这里换成真实值即可，决策逻辑不用改。
         systemHapticsEnabled = true,
-        // AtomicReference.get() 是平台类型：显式标注非空，否则 exhaustive when 缺 null 分支会告警（-Werror）
-        mute = when (muteState.get() as MuteState) {
+        mute = when (currentMute()) {
             MuteState.UNMUTED -> SystemMute.NONE
             MuteState.DND -> SystemMute.DND
             MuteState.HARDWARE_MUTED -> SystemMute.HARDWARE
@@ -278,6 +277,9 @@ class CipherHaptic internal constructor(
         hardwareClass = probe.hardwareClass,
         apiGate = ApiGate(gateway.sdkInt, probe.canUseComposition(intArrayOf(PRIMITIVE_CLICK))),
     )
+
+    /** `AtomicReference.get()` 是平台类型，直接进 exhaustive when 会因缺 null 分支告警（-Werror）。 */
+    private fun currentMute(): MuteState = muteState.get()
 
     private fun activeSnapshot(): List<PreemptionPolicy.ActiveHandleInfo> {
         sweep()
